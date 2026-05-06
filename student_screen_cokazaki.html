@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1920, initial-scale=1">
+<title>Student C – Windows Workscreen</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --accent: #0078d4;
+  --green: #107c10;
+  --red: #d13438;
+  --text: #1a1a1a;
+  --muted: #6b7280;
+  --border: #d1d5db;
+  --grid: #e5e7eb;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'Noto Sans JP', sans-serif;
+  --win-shadow: 0 8px 32px rgba(0,0,0,0.28), 0 2px 6px rgba(0,0,0,0.18);
+  --win-shadow-active: 0 18px 52px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.22);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--sans);
+  background: linear-gradient(135deg, #1a237e 0%, #283593 20%, #3949ab 45%, #5c6bc0 70%, #9fa8da 100%);
+  width: 100vw; height: 100vh;
+  overflow: hidden; position: relative; font-size: 12px;
+}
+
+/* ── タスクバー ── */
+.taskbar {
+  position: fixed; bottom: 0; left: 0; right: 0; height: 44px;
+  background: rgba(28,28,28,0.88); backdrop-filter: blur(30px);
+  display: flex; align-items: center;
+  z-index: 2000; border-top: 1px solid rgba(255,255,255,0.08);
+}
+.taskbar-start { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; font-size: 20px; cursor: pointer; }
+.taskbar-search { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; padding: 4px 12px; font-size: 11px; color: rgba(255,255,255,.65); cursor: pointer; margin: 0 6px; width: 200px; }
+.taskbar-center { display: flex; align-items: center; gap: 2px; position: absolute; left: 50%; transform: translateX(-50%); }
+.tb-app { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 44px; height: 44px; font-size: 20px; cursor: pointer; border-radius: 4px; transition: background .15s; position: relative; }
+.tb-app:hover { background: rgba(255,255,255,0.1); }
+.tb-app.active::after { content: ''; position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%); width: 14px; height: 3px; border-radius: 2px; background: var(--accent); }
+.tb-app.open::after { content: ''; position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%); width: 6px; height: 3px; border-radius: 2px; background: rgba(255,255,255,.5); }
+.taskbar-right { margin-left: auto; display: flex; align-items: center; gap: 4px; padding: 0 12px; font-size: 11px; color: rgba(255,255,255,.8); }
+.taskbar-right .tray { display: flex; align-items: center; gap: 8px; padding: 0 8px; }
+.taskbar-right .clock { text-align: center; line-height: 1.5; font-size: 10.5px; padding: 0 8px; }
+
+/* ── ウィンドウ共通 ── */
+.window { position: absolute; border-radius: 8px; box-shadow: var(--win-shadow); overflow: hidden; border: 1px solid rgba(255,255,255,0.15); font-size: 12px; transition: box-shadow 0.2s; }
+.window.active { box-shadow: var(--win-shadow-active); }
+
+.titlebar { height: 32px; display: flex; align-items: center; padding: 0 0 0 12px; position: relative; user-select: none; flex-shrink: 0; }
+.titlebar.dark { background: #1e2435; color: #fff; }
+.titlebar.light { background: #f3f3f3; color: #1a1a1a; border-bottom: 1px solid #e0e0e0; }
+.titlebar.colored { color: #fff; }
+.win-icon { font-size: 14px; margin-right: 6px; }
+.win-title-text { font-size: 11.5px; font-weight: 500; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.win-controls { display: flex; align-items: stretch; height: 32px; flex-shrink: 0; }
+.wc-btn { width: 46px; display: flex; align-items: center; justify-content: center; font-size: 10px; cursor: pointer; transition: background .12s; }
+.wc-btn:hover { background: rgba(128,128,128,0.2); }
+.wc-btn.close:hover { background: #c42b1c; color: #fff; }
+.wc-btn.dark-btn:hover { background: rgba(255,255,255,0.1); }
+.wc-btn.close.dark-btn:hover { background: #c42b1c; }
+
+/* ═══════════════════════
+   Window 1: EduStat
+═══════════════════════ */
+#win-edustat { left: 28px; top: 26px; width: 1060px; height: 715px; z-index: 30; }
+
+.es-body { display: flex; height: calc(100% - 32px); }
+.es-sb { width: 188px; min-width: 188px; background: #1e2435; display: flex; flex-direction: column; border-right: 1px solid rgba(255,255,255,.06); }
+.es-logo { padding: 14px 16px 10px; border-bottom: 1px solid rgba(255,255,255,.08); font-family: var(--mono); font-size: 17px; font-weight: 600; color: #fff; letter-spacing: .04em; }
+.es-logo-sub { font-size: 9px; color: rgba(255,255,255,.35); margin-top: 2px; letter-spacing: .07em; text-transform: uppercase; font-family: var(--sans); }
+.es-nav { padding: 10px 0; }
+.es-nav-sec { font-size: 9px; color: rgba(255,255,255,.22); text-transform: uppercase; letter-spacing: .12em; padding: 8px 16px 4px; }
+.es-item { padding: 7px 16px; color: rgba(255,255,255,.52); display: flex; align-items: center; gap: 9px; cursor: pointer; font-size: 12px; }
+.es-item.active { background: rgba(0,120,212,.32); color: #fff; border-left: 2.5px solid var(--accent); }
+.es-item .ico { font-size: 13px; width: 15px; }
+.es-file-info { margin-top: auto; padding: 10px 16px 12px; border-top: 1px solid rgba(255,255,255,.07); font-size: 9px; color: rgba(255,255,255,.28); line-height: 1.7; font-family: var(--mono); }
+.es-file-info .ok { color: #4ade80; }
+
+.es-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: #f5f4f0; }
+.es-topbar { background: #fff; border-bottom: 1px solid #e5e7eb; padding: 0 16px; height: 38px; display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.es-tab { padding: 5px 12px; border-radius: 4px 4px 0 0; font-size: 11.5px; color: #6b7280; border-bottom: 2px solid transparent; cursor: pointer; }
+.es-tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+.es-badge { margin-left: auto; background: var(--accent); color: #fff; padding: 2px 8px; border-radius: 3px; font-size: 9.5px; font-weight: 600; }
+.es-badge.green { background: #107c10; }
+
+.es-output { flex: 1; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 11px; background: #f5f4f0; }
+
+.card { background: #fff; border: 1px solid #d1d5db; border-radius: 4px; overflow: hidden; }
+.card-hd { padding: 7px 13px; background: #f8f9fb; border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; font-size: 11.5px; font-weight: 600; color: #1a1a2e; }
+.card-hd .sub { margin-left: auto; font-size: 9.5px; color: #6b7280; font-weight: 400; }
+
+/* モデル要約 — overflowなしで確実表示 */
+.rsq-lbl { font-family: var(--mono); font-size: 8.5px; color: #6b7280; text-transform: uppercase; letter-spacing: .07em; margin-bottom: 6px; }
+.rsq-val { font-size: 22px; font-weight: 700; font-family: var(--mono); line-height: 1.2; }
+.rsq-val.blue { color: var(--accent); }
+.rsq-val.green { color: #107c10; }
+.rsq-val.gray { color: #374151; font-size: 20px; }
+.rsq-sub { font-size: 8.5px; color: #9ca3af; margin-top: 4px; }
+
+.rt { width: 100%; border-collapse: collapse; font-size: 11px; }
+.rt th { padding: 5px 10px; font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: #6b7280; border-bottom: 2px solid #e5e7eb; background: #fafafa; text-align: right; }
+.rt th:first-child { text-align: left; }
+.rt td { padding: 5px 10px; border-bottom: 1px solid #f0f0f0; font-family: var(--mono); font-size: 10.5px; text-align: right; color: #374151; }
+.rt td:first-child { text-align: left; font-family: var(--sans); color: #1a1a2e; font-size: 11px; }
+.rt tr:last-child td { border-bottom: none; }
+.rt tr:hover td { background: #f0f7ff; }
+.sr { color: #d13438; font-weight: 600; }
+.so { color: #ca5010; font-weight: 600; }
+.sb { color: var(--accent); font-weight: 600; }
+.sg { color: #9ca3af; }
+
+.bb { display: flex; align-items: center; gap: 5px; justify-content: flex-end; }
+.bb-wrap { width: 50px; height: 7px; background: #e5e7eb; border-radius: 3px; overflow: hidden; }
+.bb-fill { height: 100%; border-radius: 3px; background: var(--accent); }
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+.at { width: 100%; border-collapse: collapse; font-size: 10.5px; }
+.at th { padding: 5px 10px; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: #6b7280; border-bottom: 2px solid #e5e7eb; background: #fafafa; text-align: right; }
+.at th:first-child { text-align: left; }
+.at td { padding: 5px 10px; border-bottom: 1px solid #f0f0f0; font-family: var(--mono); font-size: 10.5px; text-align: right; }
+.at td:first-child { text-align: left; font-family: var(--sans); font-weight: 500; }
+.at tr:last-child td { border-bottom: none; }
+
+.notebox { padding: 6px 12px; background: #fff4e5; border-left: 3px solid #ca5010; font-size: 9.5px; color: #7a3e00; border-radius: 0 3px 3px 0; margin: 0 13px 10px; }
+.cmd { padding: 9px 12px; background: #1e1e1e; font-family: var(--mono); font-size: 10px; color: #d4d4d4; line-height: 1.8; }
+.cmd .prompt { color: #4ec9b0; }
+.cmd .kw { color: #569cd6; }
+.cmd .str { color: #ce9178; }
+.cmd .cursor { color: var(--accent); animation: blink 1.1s step-end infinite; }
+.cmd .comment { color: #6a9955; }
+@keyframes blink { 0%,100%{opacity:1}50%{opacity:0} }
+.es-status { height: 22px; background: #1e2435; flex-shrink: 0; display: flex; align-items: center; padding: 0 14px; gap: 16px; font-size: 9px; color: rgba(255,255,255,.35); font-family: var(--mono); }
+.es-status .ok { color: #4ade80; }
+
+/* ═══════════════════════
+   Window 2: Noto（Instagram風SNS）
+   420 × 620  right:10 top:24
+═══════════════════════ */
+#win-noto { right: 10px; top: 24px; width: 420px; height: 630px; z-index: 22; background: #fff; }
+
+.noto-body { height: calc(100% - 32px); display: flex; flex-direction: column; overflow: hidden; }
+.noto-header { background: #fff; border-bottom: 1px solid #dbdbdb; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.noto-logo { font-size: 18px; font-weight: 700; color: #1a1a1a; letter-spacing: -.5px; font-family: Georgia, serif; }
+.noto-icons { display: flex; gap: 14px; font-size: 18px; color: #1a1a1a; }
+
+.noto-stories { display: flex; gap: 12px; padding: 10px 14px; border-bottom: 1px solid #dbdbdb; overflow-x: auto; flex-shrink: 0; }
+.story { display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
+.story-ring { width: 52px; height: 52px; border-radius: 50%; padding: 2px; background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); flex-shrink: 0; }
+.story-avatar { width: 100%; height: 100%; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 24px; border: 2px solid #fff; }
+.story-name { font-size: 9.5px; color: #1a1a1a; max-width: 58px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.noto-feed { flex: 1; overflow-y: auto; }
+.noto-post { border-bottom: 1px solid #dbdbdb; }
+.noto-post-header { display: flex; align-items: center; gap: 10px; padding: 10px 12px; }
+.noto-post-avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; background: #f0f0f0; flex-shrink: 0; }
+.noto-post-name { font-size: 12.5px; font-weight: 600; color: #1a1a1a; }
+.noto-post-loc { font-size: 10px; color: #737373; }
+.noto-post-more { margin-left: auto; font-size: 16px; color: #1a1a1a; cursor: pointer; }
+.noto-post-img { width: 100%; aspect-ratio: 4/3; display: flex; align-items: center; justify-content: center; font-size: 48px; background: #f0f0f0; overflow: hidden; }
+.noto-post-img.food { background: linear-gradient(135deg, #ffecd2, #fcb69f); }
+.noto-post-img.study { background: linear-gradient(135deg, #a8edea, #fed6e3); }
+.noto-post-img.campus { background: linear-gradient(135deg, #d4fc79, #96e6a1); }
+.noto-post-actions { display: flex; gap: 14px; padding: 8px 12px 4px; font-size: 20px; }
+.noto-post-likes { font-size: 12px; font-weight: 600; color: #1a1a1a; padding: 0 12px 4px; }
+.noto-post-caption { font-size: 12px; color: #1a1a1a; padding: 0 12px 6px; line-height: 1.5; }
+.noto-post-caption .uname { font-weight: 600; margin-right: 4px; }
+.noto-post-hashtag { color: #00376b; }
+.noto-post-time { font-size: 9.5px; color: #737373; padding: 0 12px 10px; text-transform: uppercase; letter-spacing: .03em; }
+
+/* ═══════════════════════
+   Window 3: メモ帳（テキストエディタ風）
+   500 × 440  center-right bottom
+═══════════════════════ */
+#win-memo { left: calc(100vw - 578px); top: 200px; width: 560px; height: 530px; z-index: 28; background: #fff; }
+
+.memo-menubar { background: #f3f3f3; border-bottom: 1px solid #e0e0e0; padding: 2px 8px; display: flex; gap: 2px; flex-shrink: 0; }
+.memo-menu-item { padding: 3px 10px; font-size: 11px; color: #1a1a1a; cursor: pointer; border-radius: 2px; }
+.memo-menu-item:hover { background: rgba(0,0,0,.07); }
+.memo-body { display: flex; flex-direction: column; height: calc(100% - 32px - 26px); }
+.memo-toolbar { background: #f9f9f9; border-bottom: 1px solid #e5e7eb; padding: 4px 10px; display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.memo-tb-btn { padding: 3px 8px; font-size: 11px; background: #fff; border: 1px solid #d1d5db; border-radius: 3px; cursor: pointer; color: #374151; }
+.memo-tb-sep { width: 1px; height: 18px; background: #d1d5db; }
+.memo-font-size { font-size: 11px; color: #374151; display: flex; align-items: center; gap: 4px; }
+
+.memo-editor {
+  flex: 1; padding: 16px 20px;
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 12.5px; line-height: 2.0; color: #1a1a1a;
+  overflow-y: auto; background: #fff;
+  white-space: pre-wrap;
+}
+.memo-editor .memo-title { font-size: 15px; font-weight: 700; color: #0d1117; margin-bottom: 4px; display: block; }
+.memo-editor .memo-date { font-size: 10px; color: #9ca3af; margin-bottom: 16px; display: block; }
+.memo-editor .hl-blue { color: #0078d4; font-weight: 600; }
+.memo-editor .hl-red { color: #d13438; font-weight: 600; }
+.memo-editor .hl-green { color: #107c10; font-weight: 600; }
+.memo-editor .underline { text-decoration: underline; text-underline-offset: 3px; }
+.memo-editor .indent { padding-left: 20px; display: block; }
+.memo-editor .cursor-line { display: inline; }
+.memo-cursor { display: inline-block; width: 2px; height: 1.1em; background: #0078d4; vertical-align: text-bottom; animation: blink 1s step-end infinite; margin-left: 1px; }
+
+.memo-statusbar { height: 20px; background: #0078d4; display: flex; align-items: center; padding: 0 12px; font-size: 9.5px; color: rgba(255,255,255,.85); font-family: var(--mono); gap: 20px; flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<!-- ════ Window 1: EduStat ════ -->
+<div class="window active" id="win-edustat">
+  <div class="titlebar dark">
+    <span class="win-icon">📊</span>
+    <span class="win-title-text">EduStat — learning_outcomes_R8.csv</span>
+    <div class="win-controls">
+      <div class="wc-btn dark-btn">—</div>
+      <div class="wc-btn dark-btn">⬜</div>
+      <div class="wc-btn close dark-btn">✕</div>
+    </div>
+  </div>
+  <div class="es-body">
+    <div class="es-sb">
+      <div class="es-logo">EduStat<div class="es-logo-sub">v2.4.1 · analysis</div></div>
+      <div class="es-nav">
+        <div class="es-nav-sec">分析メニュー</div>
+        <div class="es-item"><span class="ico">📊</span>Descriptives</div>
+        <div class="es-item"><span class="ico">🔬</span>Factor Analysis</div>
+        <div class="es-item active"><span class="ico">↔️</span>Regression</div>
+        <div class="es-item"><span class="ico">🔗</span>Correlation</div>
+        <div class="es-item"><span class="ico">📈</span>SEM / Path</div>
+        <div class="es-nav-sec" style="margin-top:6px;">データセット</div>
+        <div class="es-item" style="font-size:10px; flex-direction:column; align-items:flex-start; gap:1px; padding:6px 16px;">
+          <span style="color:rgba(255,255,255,.72); font-family:var(--mono);">learning_outcomes_R8.csv</span>
+          <span style="font-size:9px; color:rgba(255,255,255,.28);">n = 312 · 14 vars · 6尺度得点</span>
+        </div>
+        <div class="es-item" style="font-size:10px; color:rgba(255,255,255,.28);">student_survey_2025.csv</div>
+      </div>
+      <div class="es-file-info">推定法：OLS<br>有効 n：308 / 312<br><span class="ok">● 分析完了</span></div>
+    </div>
+
+    <div class="es-main">
+      <div class="es-topbar">
+        <div class="es-tab active">重回帰分析</div>
+        <div class="es-tab">相関行列</div>
+        <div class="es-tab">記述統計</div>
+        <div class="es-tab">残差診断</div>
+        <span class="es-badge green">● 完了</span>
+        <span class="es-badge" style="margin-left:6px;">n = 308</span>
+      </div>
+
+      <div class="es-output" id="main-output">
+
+        <!-- モデル要約（overflow:hiddenの外側に構造） -->
+        <div style="background:#fff; border:1px solid #d1d5db; border-radius:4px;">
+          <div class="card-hd" style="border-radius:4px 4px 0 0; border-bottom:1px solid #e5e7eb;">
+            モデル要約<span class="sub">従属変数：最終試験得点（score_final）</span>
+          </div>
+          <div style="display:flex; background:#fff;">
+            <div style="flex:1; padding:14px 10px; text-align:center; border-right:1px solid #e5e7eb;">
+              <div class="rsq-lbl">R²</div>
+              <div class="rsq-val blue">.310</div>
+              <div class="rsq-sub">決定係数</div>
+            </div>
+            <div style="flex:1; padding:14px 10px; text-align:center; border-right:1px solid #e5e7eb;">
+              <div class="rsq-lbl">調整済み R²</div>
+              <div class="rsq-val blue">.296</div>
+              <div class="rsq-sub">自由度調整済み</div>
+            </div>
+            <div style="flex:1; padding:14px 10px; text-align:center; border-right:1px solid #e5e7eb;">
+              <div class="rsq-lbl">F値</div>
+              <div class="rsq-val green">22.54</div>
+              <div class="rsq-sub">df = 6, 301　p &lt; .001</div>
+            </div>
+            <div style="flex:1; padding:14px 10px; text-align:center;">
+              <div class="rsq-lbl">推定標準誤差</div>
+              <div class="rsq-val gray">9.40</div>
+              <div class="rsq-sub">SEE（点）</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 回帰係数 -->
+        <div class="card">
+          <div class="card-hd">回帰係数<span class="sub">各独立変数は複数項目の平均値　*** p &lt; .001　** p &lt; .01　* p &lt; .05</span></div>
+          <table class="rt">
+            <thead><tr><th>変数</th><th>B（非標準化）</th><th>SE</th><th>β（標準化）</th><th>t値</th><th>p値</th><th>VIF</th></tr></thead>
+            <tbody>
+              <tr><td>（定数）</td><td>38.47</td><td>5.12</td><td>—</td><td>7.51</td><td class="sr">&lt; .001***</td><td>—</td></tr>
+              <tr><td>動機づけ尺度（5項目平均）</td><td>3.14</td><td>1.08</td><td><div class="bb"><span>.20</span><div class="bb-wrap"><div class="bb-fill" style="width:50%"></div></div></div></td><td>2.91</td><td class="so">.004**</td><td>1.84</td></tr>
+              <tr><td>自己効力感尺度（4項目平均）</td><td>3.76</td><td>1.14</td><td><div class="bb"><span>.23</span><div class="bb-wrap"><div class="bb-fill" style="width:58%"></div></div></div></td><td>3.30</td><td class="so">.001**</td><td>2.11</td></tr>
+              <tr><td>メタ認知方略尺度（6項目平均）</td><td>2.58</td><td>1.02</td><td><div class="bb"><span>.16</span><div class="bb-wrap"><div class="bb-fill" style="width:40%"></div></div></div></td><td>2.53</td><td class="sb">.012*</td><td>1.96</td></tr>
+              <tr><td>協働学習志向尺度（4項目平均）</td><td>0.61</td><td>1.05</td><td><div class="bb"><span>.04</span><div class="bb-wrap"><div class="bb-fill" style="width:10%"></div></div></div></td><td>0.58</td><td class="sg">.562</td><td>1.73</td></tr>
+              <tr><td>深い処理方略尺度（5項目平均）</td><td>2.94</td><td>1.11</td><td><div class="bb"><span>.18</span><div class="bb-wrap"><div class="bb-fill" style="width:45%"></div></div></div></td><td>2.65</td><td class="so">.008**</td><td>2.03</td></tr>
+              <tr><td>援助要請行動尺度（4項目平均）</td><td>0.47</td><td>0.98</td><td><div class="bb"><span>.03</span><div class="bb-wrap"><div class="bb-fill" style="width:8%"></div></div></div></td><td>0.48</td><td class="sg">.632</td><td>1.68</td></tr>
+            </tbody>
+          </table>
+          <div class="notebox">全変数のVIF &lt; 3.0 ／ 多重共線性の問題なし　· Durbin–Watson = 1.94</div>
+        </div>
+
+        <!-- ANOVA + 散布図 -->
+        <div class="two-col">
+          <div class="card">
+            <div class="card-hd">分散分析表（ANOVA）</div>
+            <table class="at">
+              <thead><tr><th>変動因</th><th>SS</th><th>df</th><th>MS</th><th>F</th><th>p</th></tr></thead>
+              <tbody>
+                <tr><td>回帰</td><td>11,938</td><td>6</td><td>1,990</td><td class="sb">22.54</td><td class="sr">&lt; .001</td></tr>
+                <tr><td>残差</td><td>26,572</td><td>301</td><td>88.28</td><td>—</td><td>—</td></tr>
+                <tr><td><strong>全体</strong></td><td><strong>38,510</strong></td><td><strong>307</strong></td><td>—</td><td>—</td><td>—</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="card">
+            <div class="card-hd">予測値 vs 実測値<span class="sub">r = .56***</span></div>
+            <div style="padding:8px 12px;">
+              <svg viewBox="0 0 240 130" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:115px;">
+                <line x1="26" y1="8" x2="26" y2="112" stroke="#d1d5db" stroke-width="1.1"/>
+                <line x1="26" y1="112" x2="230" y2="112" stroke="#d1d5db" stroke-width="1.1"/>
+                <line x1="26" y1="90" x2="230" y2="90" stroke="#e5e7eb" stroke-width=".7" stroke-dasharray="3,2"/>
+                <line x1="26" y1="68" x2="230" y2="68" stroke="#e5e7eb" stroke-width=".7" stroke-dasharray="3,2"/>
+                <line x1="26" y1="46" x2="230" y2="46" stroke="#e5e7eb" stroke-width=".7" stroke-dasharray="3,2"/>
+                <line x1="26" y1="24" x2="230" y2="24" stroke="#e5e7eb" stroke-width=".7" stroke-dasharray="3,2"/>
+                <line x1="34" y1="106" x2="222" y2="16" stroke="#0078d4" stroke-width="1.4" stroke-dasharray="5,3" opacity=".4"/>
+                <circle cx="38"  cy="104" r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="46"  cy="88"  r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="52"  cy="99"  r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="58"  cy="80"  r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="64"  cy="95"  r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="70"  cy="72"  r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="76"  cy="105" r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="82"  cy="84"  r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="88"  cy="62"  r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="94"  cy="92"  r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="100" cy="76"  r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="106" cy="48"  r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="112" cy="86"  r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="118" cy="64"  r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="124" cy="38"  r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="130" cy="74"  r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="136" cy="92"  r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="142" cy="50"  r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="148" cy="68"  r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="154" cy="30"  r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="160" cy="78"  r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="166" cy="54"  r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="172" cy="22"  r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="178" cy="66"  r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="184" cy="42"  r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="190" cy="82"  r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="196" cy="34"  r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="202" cy="58"  r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="208" cy="18"  r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="214" cy="46"  r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="220" cy="28"  r="2.2" fill="#0078d4" opacity=".5"/>
+                <text x="128" y="124" text-anchor="middle" font-size="7.5" fill="#9ca3af" font-family="IBM Plex Mono">予測値（点）</text>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- コマンドログ -->
+        <div class="card" style="overflow:hidden;">
+          <div class="card-hd" style="background:#1e1e1e; color:#d4d4d4; border-bottom:1px solid #333;">コマンドログ</div>
+          <div class="cmd">
+            <span class="comment"># 重回帰分析の実行</span><br>
+            <span class="prompt">&gt;</span> <span class="kw">regression</span>(dep=<span class="str">"score_final"</span>,<br>
+            &nbsp;&nbsp;preds=c(<span class="str">"mot_score","se_score","meta_score","col_score","deep_score","help_score"</span>),<br>
+            &nbsp;&nbsp;std=<span class="kw">TRUE</span>, vif=<span class="kw">TRUE</span>)<br>
+            <span class="prompt">&gt;</span> <span class="kw">plot_fitted</span>(model_1)<br>
+            <span class="prompt">&gt;</span> <span class="cursor">█</span>
+          </div>
+        </div>
+
+      </div><!-- /es-output -->
+
+      <div class="es-status">
+        <span class="ok">● 分析完了</span>
+        <span>処理時間: 0.19s</span>
+        <span>VIF max = 2.11</span>
+        <span style="margin-left:auto;">教育データサイエンス · R8後期 · 武庫川女子大学</span>
+      </div>
+    </div>
+  </div>
+</div><!-- /win-edustat -->
+
+
+
+<!-- ════ Window 3: メモ帳 ════ -->
+<div class="window" id="win-memo">
+  <div class="titlebar light">
+    <span class="win-icon">📝</span>
+    <span class="win-title-text">分析メモ.txt — テキストエディタ</span>
+    <div class="win-controls">
+      <div class="wc-btn">—</div>
+      <div class="wc-btn">⬜</div>
+      <div class="wc-btn close">✕</div>
+    </div>
+  </div>
+  <div class="memo-menubar">
+    <div class="memo-menu-item">ファイル</div>
+    <div class="memo-menu-item">編集</div>
+    <div class="memo-menu-item">表示</div>
+    <div class="memo-menu-item">ヘルプ</div>
+  </div>
+  <div class="memo-body">
+    <div class="memo-toolbar">
+      <div class="memo-tb-btn"><b>B</b></div>
+      <div class="memo-tb-btn"><i>I</i></div>
+      <div class="memo-tb-btn"><u>U</u></div>
+      <div class="memo-tb-sep"></div>
+      <div class="memo-font-size">Noto Sans JP &nbsp; 12</div>
+    </div>
+    <div class="memo-editor">
+<span class="memo-title">教育データサイエンス　第11回　分析メモ</span><span class="memo-date">2026/05/06　13:38</span>
+■ モデル要約
+　<span class="hl-blue">R² = .310</span>　→ 学習成果の分散を約31%説明
+　調整済みR² = .296　（6変数で自由度修正済み）
+　F(6,301) = 22.54, <span class="hl-red">p &lt; .001</span>　→ モデル全体は有意
+
+■ 有意だった変数
+　<span class="underline">自己効力感尺度</span>　β = .23　<span class="hl-red">**</span>　← β最大、最も影響強い
+　動機づけ尺度　　β = .20　<span class="hl-red">**</span>
+　深い処理方略尺度　β = .18　<span class="hl-red">**</span>
+　メタ認知方略尺度　β = .16　<span class="hl-green">*</span>
+
+■ 有意でなかった変数
+　協働学習志向尺度　β = .04　n.s.　（p = .562）
+　援助要請行動尺度　β = .03　n.s.　（p = .632）
+　→ 有意でなくても、理論的根拠あれば投入OK
+　　（先生の説明より）
+
+■ 多重共線性チェック
+　VIF最大 = 2.11　→ <span class="hl-green">問題なし</span>（基準 &lt; 10）
+　Durbin-Watson = 1.94　→ 残差の独立性OK
+
+■ レポートで書くこと
+　1. 分析目的・変数の説明
+　2. 記述統計（平均・SD）
+　3. 回帰係数表（β, p値, VIF）
+　4. R²の解釈
+　5. <span class="cursor-line">有意でない変数の考察<span class="memo-cursor"></span></span></div>
+    <div class="memo-statusbar">
+      <span>行 22, 列 17</span>
+      <span>UTF-8</span>
+      <span>LF</span>
+      <span style="margin-left:auto;">上書き保存：13:41</span>
+    </div>
+  </div>
+</div><!-- /win-memo -->
+
+<!-- タスクバー -->
+<div class="taskbar">
+  <div class="taskbar-start">⊞</div>
+  <div class="taskbar-search">🔍 検索</div>
+  <div class="taskbar-center">
+    <div class="tb-app active" data-win="win-edustat">📊</div>
+    <div class="tb-app open" data-win="win-memo">📝</div>
+    <div class="tb-app">📁</div>
+    <div class="tb-app">⚙️</div>
+  </div>
+  <div class="taskbar-right">
+    <div class="tray">🔊 📶 🔋</div>
+    <div class="clock">13:42<br>2026/05/06</div>
+  </div>
+</div>
+
+<script>
+// ── グローバルドラッグ管理 ──
+let dragging = null, ox = 0, oy = 0, zTop = 50;
+
+function focusWin(win) {
+  document.querySelectorAll('.window').forEach(w => w.classList.remove('active'));
+  win.classList.add('active');
+  win.style.zIndex = ++zTop;
+  document.querySelectorAll('.tb-app').forEach(btn => {
+    btn.classList.remove('active');
+    if (btn.dataset.win === win.id) btn.classList.add('active');
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.window').forEach(win => {
+    win.addEventListener('mousedown', () => focusWin(win), true);
+    const tb = win.querySelector('.titlebar');
+    if (!tb) return;
+    tb.style.cursor = 'grab';
+    tb.addEventListener('mousedown', e => {
+      if (e.target.classList.contains('wc-btn')) return;
+      e.preventDefault();
+      focusWin(win);
+      const r = win.getBoundingClientRect();
+      win.style.left = r.left + 'px';
+      win.style.top  = r.top  + 'px';
+      win.style.right = 'auto';
+      win.style.bottom = 'auto';
+      ox = e.clientX - r.left;
+      oy = e.clientY - r.top;
+      dragging = win;
+      tb.style.cursor = 'grabbing';
+    });
+  });
+});
+
+document.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  dragging.style.left = Math.max(0, e.clientX - ox) + 'px';
+  dragging.style.top  = Math.max(0, e.clientY - oy) + 'px';
+});
+
+document.addEventListener('mouseup', () => {
+  if (dragging) {
+    const tb = dragging.querySelector('.titlebar');
+    if (tb) tb.style.cursor = 'grab';
+    dragging = null;
+  }
+});
+
+// ── タスクバー ──
+document.querySelectorAll('.tb-app[data-win]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const win = document.getElementById(btn.dataset.win);
+    if (win) focusWin(win);
+  });
+});
+
+// ── EduStat タブ切り替え ──
+const makeContent = (html) => {
+  const d = document.createElement('div');
+  d.className = 'es-output'; d.style.display = 'none';
+  d.innerHTML = html; return d;
+};
+
+const corrContent = makeContent(`
+  <div class="card">
+    <div class="card-hd">相関行列<span class="sub">Pearson の積率相関係数　*** p &lt; .001　** p &lt; .01</span></div>
+    <table class="rt" style="font-size:10.5px;">
+      <thead><tr><th>変数</th><th>動機づけ</th><th>自己効力</th><th>メタ認知</th><th>協働</th><th>深い処理</th><th>援助要請</th><th>score</th></tr></thead>
+      <tbody>
+        <tr><td>動機づけ尺度</td><td style="background:#eff6ff;">—</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr><td>自己効力感尺度</td><td class="sb">.48***</td><td style="background:#eff6ff;">—</td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr><td>メタ認知方略尺度</td><td class="sb">.41***</td><td class="sb">.52***</td><td style="background:#eff6ff;">—</td><td></td><td></td><td></td><td></td></tr>
+        <tr><td>協働学習志向尺度</td><td class="so">.31**</td><td class="so">.28**</td><td class="so">.35**</td><td style="background:#eff6ff;">—</td><td></td><td></td><td></td></tr>
+        <tr><td>深い処理方略尺度</td><td class="sb">.44***</td><td class="sb">.46***</td><td class="sb">.55***</td><td class="so">.38**</td><td style="background:#eff6ff;">—</td><td></td><td></td></tr>
+        <tr><td>援助要請行動尺度</td><td class="so">.22**</td><td class="so">.19**</td><td class="so">.27**</td><td class="so">.34**</td><td class="so">.24**</td><td style="background:#eff6ff;">—</td><td></td></tr>
+        <tr><td>最終試験得点</td><td class="sb">.41***</td><td class="sb">.44***</td><td class="sb">.38***</td><td class="sg">.14</td><td class="sb">.37***</td><td class="sg">.12</td><td style="background:#eff6ff;">—</td></tr>
+      </tbody>
+    </table>
+  </div>`);
+
+const descContent = makeContent(`
+  <div class="card">
+    <div class="card-hd">記述統計<span class="sub">n = 308（リストワイズ除去後）</span></div>
+    <table class="rt">
+      <thead><tr><th>変数</th><th>M</th><th>SD</th><th>Min</th><th>Max</th><th>歪度</th><th>尖度</th></tr></thead>
+      <tbody>
+        <tr><td>最終試験得点</td><td>74.3</td><td>11.2</td><td>38.0</td><td>100.0</td><td>−0.31</td><td>0.18</td></tr>
+        <tr><td>動機づけ尺度</td><td>3.82</td><td>0.71</td><td>1.00</td><td>5.00</td><td>−0.44</td><td>0.52</td></tr>
+        <tr><td>自己効力感尺度</td><td>3.65</td><td>0.84</td><td>1.00</td><td>5.00</td><td>−0.38</td><td>0.09</td></tr>
+        <tr><td>メタ認知方略尺度</td><td>3.47</td><td>0.79</td><td>1.00</td><td>5.00</td><td>−0.21</td><td>−0.14</td></tr>
+        <tr><td>協働学習志向尺度</td><td>3.71</td><td>0.88</td><td>1.00</td><td>5.00</td><td>−0.50</td><td>0.31</td></tr>
+        <tr><td>深い処理方略尺度</td><td>3.54</td><td>0.76</td><td>1.00</td><td>5.00</td><td>−0.27</td><td>0.07</td></tr>
+        <tr><td>援助要請行動尺度</td><td>3.39</td><td>0.92</td><td>1.00</td><td>5.00</td><td>−0.18</td><td>−0.22</td></tr>
+      </tbody>
+    </table>
+  </div>`);
+
+const residContent = makeContent(`
+  <div class="card">
+    <div class="card-hd">残差診断<span class="sub">OLS回帰モデルの診断プロット</span></div>
+    <div style="padding:10px 14px; font-size:11px; color:#374151; line-height:1.9;">
+      ・残差は予測値に対してランダムに分布（等分散性 OK）<br>
+      ・Q-Qプロットは対角線に近く、正規性は概ね満たされている<br>
+      ・Durbin–Watson = 1.94（独立性 OK）<br>
+      ・Shapiro-Wilk 検定：W = 0.987, p = .142（正規性 棄却されず）
+    </div>
+  </div>`);
+
+const esMain = document.querySelector('.es-main');
+const esStatus = document.querySelector('.es-status');
+[corrContent, descContent, residContent].forEach(c => esMain.insertBefore(c, esStatus));
+
+const mainOutput = document.getElementById('main-output');
+const contentMap = { '重回帰分析': mainOutput, '相関行列': corrContent, '記述統計': descContent, '残差診断': residContent };
+
+document.querySelectorAll('.es-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.es-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    Object.values(contentMap).forEach(c => c.style.display = 'none');
+    const c = contentMap[tab.textContent.trim()];
+    if (c) {
+      c.style.display = 'flex'; c.style.opacity = '0';
+      requestAnimationFrame(() => { c.style.transition = 'opacity .2s'; c.style.opacity = '1'; });
+    }
+    focusWin(document.getElementById('win-edustat'));
+  });
+});
+</script>
+</body>
+</html>

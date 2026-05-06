@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1920, initial-scale=1">
+<title>Student Workscreen</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --desk: #3a4a5c;
+  --win-border: rgba(0,0,0,0.22);
+  --titlebar: #e2e2e2;
+  --titlebar-inactive: #f0f0f0;
+  --accent: #2563c9;
+  --green: #28c840;
+  --yellow: #ffbd2e;
+  --red: #ff5f57;
+  --text: #1a1a2e;
+  --muted: #6b7280;
+  --grid: #e5e7eb;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'Noto Sans JP', sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--sans);
+  background: linear-gradient(145deg, #b8d4f0 0%, #c9dff5 25%, #dde8f5 50%, #c5d8ee 75%, #a8cbec 100%);
+  background-image:
+    linear-gradient(145deg, #b8d4f0 0%, #c9dff5 25%, #dde8f5 50%, #c5d8ee 75%, #a8cbec 100%),
+    radial-gradient(ellipse at 20% 30%, rgba(255,255,255,0.35) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(100,160,220,0.25) 0%, transparent 50%);
+  background-blend-mode: normal;
+  width: 100vw; height: 100vh;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ── menubar ── */
+.menubar {
+  position: fixed; top: 0; left: 0; right: 0; height: 24px;
+  background: rgba(228,228,228,0.94);
+  backdrop-filter: blur(20px);
+  display: flex; align-items: center; padding: 0 14px; gap: 20px;
+  font-size: 12px; font-weight: 500; color: #111;
+  z-index: 1000; border-bottom: 1px solid rgba(0,0,0,0.12);
+  user-select: none;
+}
+.menubar-apple { font-size: 15px; }
+.menubar-app { font-weight: 700; }
+.menubar-item { opacity: .8; cursor: default; }
+.menubar-right { margin-left: auto; display: flex; align-items: center; gap: 16px; font-size: 11px; color: #333; }
+
+/* ── dock ── */
+.dock {
+  position: fixed; bottom: 5px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: flex-end; gap: 5px;
+  background: rgba(255,255,255,0.18); backdrop-filter: blur(24px);
+  border: 1px solid rgba(255,255,255,0.28); border-radius: 18px;
+  padding: 5px 10px; z-index: 1000;
+}
+.dock-icon {
+  width: 44px; height: 44px; border-radius: 11px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px; cursor: pointer;
+  transition: transform .15s; position: relative;
+}
+.dock-icon:hover { transform: scale(1.2) translateY(-5px); }
+.dock-icon.active::after {
+  content: ''; position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%);
+  width: 4px; height: 4px; border-radius: 50%; background: rgba(0,0,0,0.55);
+}
+.dock-sep { width: 1px; height: 36px; background: rgba(255,255,255,0.3); margin: 0 4px; align-self: center; }
+
+/* ── window base ── */
+.window {
+  position: absolute;
+  border-radius: 11px;
+  box-shadow: 0 28px 80px rgba(0,0,0,0.55), 0 2px 8px rgba(0,0,0,0.25);
+  overflow: hidden;
+  border: 1px solid var(--win-border);
+  font-size: 12px;
+}
+
+.titlebar {
+  height: 30px; background: var(--titlebar);
+  display: flex; align-items: center; padding: 0 12px;
+  border-bottom: 1px solid rgba(0,0,0,0.13);
+  position: relative; user-select: none; flex-shrink: 0;
+}
+.traffic { display: flex; gap: 6px; align-items: center; }
+.dot { width: 12px; height: 12px; border-radius: 50%; }
+.dot.r { background: var(--red); }
+.dot.y { background: var(--yellow); }
+.dot.g { background: var(--green); }
+.dot.dim { background: #d0d0d0; }
+.win-title {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  font-size: 11.5px; font-weight: 500; color: #333; white-space: nowrap;
+}
+
+/* ═══════════════════════════════
+   Window 1: EduStat  （左・最前面）
+   950 × 680
+═══════════════════════════════ */
+#win-edustat {
+  left: 28px; top: 32px;
+  width: 950px; height: 680px;
+  z-index: 30; background: #f5f4f0;
+}
+.es-body { display: flex; height: calc(100% - 30px); }
+
+/* sidebar */
+.es-sb {
+  width: 190px; min-width: 190px;
+  background: #1e2435; display: flex; flex-direction: column;
+}
+.es-logo {
+  padding: 14px 16px 11px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  font-family: var(--mono); font-size: 17px; font-weight: 600; color: #fff; letter-spacing: .04em;
+}
+.es-logo-sub { font-size: 9px; color: rgba(255,255,255,.38); margin-top: 2px; letter-spacing: .07em; text-transform: uppercase; font-family: var(--sans); }
+.es-nav { padding: 10px 0; }
+.es-nav-section { font-size: 9px; color: rgba(255,255,255,.25); text-transform: uppercase; letter-spacing: .12em; padding: 8px 16px 4px; }
+.es-item { padding: 7px 16px; color: rgba(255,255,255,.52); display: flex; align-items: center; gap: 9px; cursor: pointer; font-size: 12px; }
+.es-item.active { background: rgba(37,99,201,.28); color: #fff; border-left: 2.5px solid #2563c9; }
+.es-item .ico { font-size: 13px; width: 15px; }
+.es-file-info {
+  margin-top: auto; padding: 10px 16px 12px;
+  border-top: 1px solid rgba(255,255,255,.07);
+  font-size: 9px; color: rgba(255,255,255,.3); line-height: 1.7; font-family: var(--mono);
+}
+.es-file-info .ok { color: #4ade80; }
+
+/* main area */
+.es-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.es-topbar {
+  background: #fff; border-bottom: 1px solid #e5e7eb;
+  padding: 0 16px; height: 38px;
+  display: flex; align-items: center; gap: 4px; flex-shrink: 0;
+}
+.es-tab { padding: 5px 12px; border-radius: 4px 4px 0 0; font-size: 11.5px; color: #6b7280; border-bottom: 2px solid transparent; cursor: pointer; }
+.es-tab.active { color: #2563c9; border-bottom-color: #2563c9; font-weight: 600; }
+.es-badge { margin-left: auto; background: #2563c9; color: #fff; padding: 2px 8px; border-radius: 9px; font-size: 9.5px; font-weight: 600; }
+.es-badge.green { background: #16a37f; }
+
+.es-output {
+  flex: 1; overflow-y: auto; padding: 16px 18px;
+  display: flex; flex-direction: column; gap: 12px;
+  background: #f5f4f0;
+}
+
+/* cards */
+.card {
+  background: #fff; border: 1px solid #d1d5db; border-radius: 6px; overflow: hidden;
+}
+.card-hd {
+  padding: 7px 14px; background: #f8f9fb; border-bottom: 1px solid #e5e7eb;
+  display: flex; align-items: center; font-size: 11.5px; font-weight: 600; color: #1a1a2e;
+}
+.card-hd .sub { margin-left: auto; font-size: 9.5px; color: #6b7280; font-weight: 400; }
+
+/* model summary */
+.rsq-row { display: flex; }
+.rsq-cell { flex: 1; padding: 12px 12px 10px; text-align: center; border-right: 1px solid #e5e7eb; min-height: 72px; }
+.rsq-cell:last-child { border-right: none; }
+.rsq-lbl { font-family: var(--mono); font-size: 8.5px; color: #6b7280; text-transform: uppercase; letter-spacing: .07em; margin-bottom: 4px; }
+.rsq-val { font-size: 19px; font-weight: 700; font-family: var(--mono); }
+.rsq-val.blue { color: #2563c9; }
+.rsq-val.green { color: #16a37f; }
+.rsq-val.gray { color: #374151; font-size: 17px; }
+.rsq-sub { font-size: 8.5px; color: #9ca3af; margin-top: 3px; }
+
+/* reg table */
+.rt { width: 100%; border-collapse: collapse; font-size: 11px; }
+.rt th { padding: 5px 10px; font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: #6b7280; border-bottom: 2px solid #e5e7eb; background: #fafafa; text-align: right; }
+.rt th:first-child { text-align: left; }
+.rt td { padding: 6px 10px; border-bottom: 1px solid #f0f0f0; font-family: var(--mono); font-size: 10.5px; text-align: right; color: #374151; }
+.rt td:first-child { text-align: left; font-family: var(--sans); color: #1a1a2e; font-size: 11px; }
+.rt tr:last-child td { border-bottom: none; }
+.rt tr:hover td { background: #f5f7ff; }
+.sr { color: #e84a3f; font-weight: 600; }
+.so { color: #d97706; font-weight: 600; }
+.sb { color: #2563c9; font-weight: 600; }
+.sg { color: #9ca3af; }
+
+/* beta bar */
+.bb { display: flex; align-items: center; gap: 5px; justify-content: flex-end; }
+.bb-wrap { width: 52px; height: 7px; background: #e5e7eb; border-radius: 3px; overflow: hidden; }
+.bb-fill { height: 100%; border-radius: 3px; background: #2563c9; }
+
+/* two-col */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* anova */
+.at { width: 100%; border-collapse: collapse; font-size: 10.5px; }
+.at th { padding: 5px 10px; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: #6b7280; border-bottom: 2px solid #e5e7eb; background: #fafafa; text-align: right; }
+.at th:first-child { text-align: left; }
+.at td { padding: 5px 10px; border-bottom: 1px solid #f0f0f0; font-family: var(--mono); font-size: 10.5px; text-align: right; }
+.at td:first-child { text-align: left; font-family: var(--sans); font-weight: 500; }
+.at tr:last-child td { border-bottom: none; }
+
+/* scatter */
+.sc-wrap { padding: 10px 14px; }
+
+/* cmd log */
+.cmd {
+  padding: 9px 12px; background: #fff; border: 1px solid #e5e7eb; border-radius: 4px;
+  font-family: var(--mono); font-size: 10px; color: #374151; line-height: 1.7;
+}
+.cmd .prompt { color: #16a37f; }
+.cmd .cursor { color: #2563c9; animation: blink 1.1s step-end infinite; }
+@keyframes blink { 0%,100%{opacity:1}50%{opacity:0} }
+.cmd .comment { color: #9ca3af; }
+
+.notebox {
+  padding: 7px 12px; background: #fffbeb; border-left: 3px solid #f59e0b;
+  font-size: 9.5px; color: #78350f; border-radius: 0 4px 4px 0;
+  margin: 0 14px 10px;
+}
+
+.es-status {
+  height: 22px; background: #1e2435; flex-shrink: 0;
+  display: flex; align-items: center; padding: 0 14px; gap: 16px;
+  font-size: 9px; color: rgba(255,255,255,.38); font-family: var(--mono);
+}
+.es-status .ok { color: #4ade80; }
+
+/* ═══════════════════════════════
+   Window 2: スプレッドシート（右上・背面）
+   760 × 520
+═══════════════════════════════ */
+#win-sheet {
+  right: 18px; top: 32px;
+  width: 760px; height: 520px;
+  z-index: 20; background: #fff;
+}
+.sh-toolbar {
+  background: #f9fafb; border-bottom: 1px solid #d1d5db;
+  padding: 4px 10px; display: flex; align-items: center; gap: 8px;
+  font-size: 10px; color: #374151; flex-shrink: 0;
+}
+.sh-btn {
+  font-size: 9.5px; background: #fff; padding: 2px 9px;
+  border-radius: 3px; border: 1px solid #d1d5db; color: #374151; cursor: default;
+}
+.sh-tabs {
+  background: #f3f4f6; border-bottom: 1px solid #d1d5db;
+  padding: 0 8px; display: flex; align-items: flex-end; gap: 2px;
+  height: 24px; flex-shrink: 0;
+}
+.sh-tab { padding: 3px 13px; font-size: 10px; color: #6b7280; border-radius: 4px 4px 0 0; background: #e5e7eb; border: 1px solid #d1d5db; border-bottom: none; cursor: default; }
+.sh-tab.active { background: #fff; color: #1a1a2e; font-weight: 600; }
+.sh-fbar {
+  background: #fff; border-bottom: 1px solid #e5e7eb;
+  padding: 3px 10px; display: flex; align-items: center; gap: 8px;
+  font-size: 10px; flex-shrink: 0;
+}
+.cell-addr { font-family: var(--mono); background: #f9fafb; border: 1px solid #d1d5db; padding: 1px 7px; border-radius: 2px; font-size: 10px; }
+.fx-content { font-family: var(--mono); font-size: 10px; color: #374151; flex: 1; }
+.sh-grid { overflow: auto; height: calc(100% - 30px - 34px - 24px - 24px); }
+
+table.grid { border-collapse: collapse; font-size: 11px; font-family: var(--mono); }
+table.grid th {
+  width: 30px; min-width: 30px; padding: 3px 4px;
+  background: #f3f4f6; border: 1px solid #d1d5db;
+  font-size: 9.5px; font-weight: 500; color: #6b7280; text-align: center;
+  position: sticky; top: 0; z-index: 2;
+}
+table.grid th.rn { position: sticky; left: 0; z-index: 3; top: auto; }
+table.grid td { padding: 3px 8px; border: 1px solid #e5e7eb; white-space: nowrap; text-align: right; color: #374151; min-width: 78px; }
+table.grid td.lc { text-align: left; color: #1a1a2e; font-family: var(--sans); background: #fafafa; font-size: 10.5px; font-weight: 500; position: sticky; left: 30px; min-width: 55px; }
+table.grid td.rn-cell { background: #f3f4f6; color: #9ca3af; text-align: center; font-size: 9.5px; position: sticky; left: 0; min-width: 30px; border-color: #d1d5db; }
+table.grid td.sel { background: #dbeafe !important; }
+table.grid td.hd { background: #eff6ff; color: #1e40af; font-weight: 700; text-align: center; font-family: var(--sans); font-size: 10.5px; }
+table.grid tr:hover td { background: #f9fafb; }
+table.grid tr:hover td.lc { background: #f3f4f6; }
+table.grid tr:hover td.rn-cell { background: #ebebeb; }
+
+/* ═══════════════════════════════
+   Window 3: 課題メモ（右下・小さい）
+   300 × 290
+═══════════════════════════════ */
+#win-note {
+  right: 18px; bottom: 58px;
+  width: 310px; height: 310px;
+  z-index: 25; background: #fefce8;
+}
+#win-note .titlebar { background: #fde68a; border-bottom: 1px solid #fcd34d; }
+.note-body {
+  padding: 12px 15px; font-size: 11px; line-height: 1.85; color: #1c1917;
+  background: #fefce8; height: calc(100% - 30px); overflow-y: auto;
+}
+.note-h { font-size: 12px; font-weight: 700; color: #78350f; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1.5px dashed #fcd34d; }
+.note-sec { font-size: 9.5px; font-weight: 700; color: #92400e; margin: 8px 0 4px; text-transform: uppercase; letter-spacing: .08em; }
+.ni { display: flex; align-items: flex-start; gap: 5px; font-size: 10.5px; color: #292524; margin-bottom: 2px; }
+.ni::before { content: '□'; color: #d97706; flex-shrink: 0; }
+.ni.done::before { content: '☑'; color: #16a37f; }
+.ni.done span { text-decoration: line-through; color: #a8a29e; }
+.note-memo { font-size: 10.5px; color: #6d28d9; font-style: italic; margin-top: 8px; padding: 5px 8px; background: rgba(109,40,217,0.06); border-left: 2px solid #7c3aed; border-radius: 0 3px 3px 0; }
+</style>
+</head>
+<body>
+
+<!-- menubar -->
+<div class="menubar">
+  <span class="menubar-apple">🍎</span>
+  <span class="menubar-app">EduStat</span>
+  <span class="menubar-item">ファイル</span>
+  <span class="menubar-item">編集</span>
+  <span class="menubar-item">分析</span>
+  <span class="menubar-item">表示</span>
+  <span class="menubar-item">ウィンドウ</span>
+  <span class="menubar-item">ヘルプ</span>
+  <div class="menubar-right">
+    <span>🔋 76%</span>
+    <span>📶</span>
+    <span>🔊</span>
+    <span>水 13:48</span>
+  </div>
+</div>
+
+<!-- ════ Window 1: EduStat ════ -->
+<div class="window" id="win-edustat">
+  <div class="titlebar">
+    <div class="traffic"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+    <div class="win-title">EduStat — learning_outcomes_R8.csv</div>
+  </div>
+  <div class="es-body">
+
+    <!-- sidebar -->
+    <div class="es-sb">
+      <div class="es-logo">EduStat<div class="es-logo-sub">v2.4.1 · analysis</div></div>
+      <div class="es-nav">
+        <div class="es-nav-section">分析メニュー</div>
+        <div class="es-item"><span class="ico">📊</span>Descriptives</div>
+        <div class="es-item"><span class="ico">🔬</span>Factor Analysis</div>
+        <div class="es-item active"><span class="ico">↔️</span>Regression</div>
+        <div class="es-item"><span class="ico">🔗</span>Correlation</div>
+        <div class="es-item"><span class="ico">📈</span>SEM / Path</div>
+        <div class="es-nav-section" style="margin-top:6px;">データセット</div>
+        <div class="es-item" style="font-size:10px; flex-direction:column; align-items:flex-start; gap:1px; padding: 6px 16px;">
+          <span style="color:rgba(255,255,255,.7); font-family:var(--mono);">learning_outcomes_R8.csv</span>
+          <span style="font-size:9px; color:rgba(255,255,255,.3);">n = 312 &nbsp;·&nbsp; 14 vars</span>
+        </div>
+        <div class="es-item" style="font-size:10px; color:rgba(255,255,255,.3);">student_survey_2025.csv</div>
+      </div>
+      <div class="es-file-info">
+        推定法：OLS<br>
+        有効 n：308 / 312<br>
+        <span class="ok">● 分析完了</span>
+      </div>
+    </div>
+
+    <!-- main -->
+    <div class="es-main">
+      <div class="es-topbar">
+        <div class="es-tab active">重回帰分析</div>
+        <div class="es-tab">相関行列</div>
+        <div class="es-tab">記述統計</div>
+        <div class="es-tab">残差診断</div>
+        <span class="es-badge green">● 完了</span>
+        <span class="es-badge" style="margin-left:6px;">n = 308</span>
+      </div>
+
+      <div class="es-output">
+
+        <!-- モデル要約 -->
+        <div class="card">
+          <div class="card-hd">モデル要約<span class="sub">従属変数：最終試験得点（score_final）</span></div>
+          <div class="rsq-row">
+            <div class="rsq-cell">
+              <div class="rsq-lbl">R²</div>
+              <div class="rsq-val blue">.310</div>
+              <div class="rsq-sub">決定係数</div>
+            </div>
+            <div class="rsq-cell">
+              <div class="rsq-lbl">調整済み R²</div>
+              <div class="rsq-val blue">.296</div>
+              <div class="rsq-sub">自由度調整済み</div>
+            </div>
+            <div class="rsq-cell">
+              <div class="rsq-lbl">F値</div>
+              <div class="rsq-val green">22.54</div>
+              <div class="rsq-sub">df = 6, 301 &nbsp; p &lt; .001</div>
+            </div>
+            <div class="rsq-cell">
+              <div class="rsq-lbl">推定標準誤差</div>
+              <div class="rsq-val gray">9.40</div>
+              <div class="rsq-sub">SEE（点）</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 回帰係数 -->
+        <div class="card">
+          <div class="card-hd">回帰係数<span class="sub">*** p &lt; .001　** p &lt; .01　* p &lt; .05</span></div>
+          <table class="rt">
+            <thead>
+              <tr><th>変数</th><th>B（非標準化）</th><th>SE</th><th>β（標準化）</th><th>t値</th><th>p値</th><th>VIF</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>（定数）</td><td>38.47</td><td>5.12</td><td>—</td><td>7.51</td><td class="sr">&lt; .001***</td><td>—</td></tr>
+              <tr><td>動機づけ尺度（5項目平均）</td><td>3.14</td><td>1.08</td><td><div class="bb"><span>.20</span><div class="bb-wrap"><div class="bb-fill" style="width:50%"></div></div></div></td><td>2.91</td><td class="so">.004**</td><td>1.84</td></tr>
+              <tr><td>自己効力感尺度（4項目平均）</td><td>3.76</td><td>1.14</td><td><div class="bb"><span>.23</span><div class="bb-wrap"><div class="bb-fill" style="width:58%"></div></div></div></td><td>3.30</td><td class="so">.001**</td><td>2.11</td></tr>
+              <tr><td>メタ認知方略尺度（6項目平均）</td><td>2.58</td><td>1.02</td><td><div class="bb"><span>.16</span><div class="bb-wrap"><div class="bb-fill" style="width:40%"></div></div></div></td><td>2.53</td><td class="sb">.012*</td><td>1.96</td></tr>
+              <tr><td>協働学習志向尺度（4項目平均）</td><td>0.61</td><td>1.05</td><td><div class="bb"><span>.04</span><div class="bb-wrap"><div class="bb-fill" style="width:10%"></div></div></div></td><td>0.58</td><td class="sg">.562</td><td>1.73</td></tr>
+              <tr><td>深い処理方略尺度（5項目平均）</td><td>2.94</td><td>1.11</td><td><div class="bb"><span>.18</span><div class="bb-wrap"><div class="bb-fill" style="width:45%"></div></div></div></td><td>2.65</td><td class="so">.008**</td><td>2.03</td></tr>
+              <tr><td>援助要請行動尺度（4項目平均）</td><td>0.47</td><td>0.98</td><td><div class="bb"><span>.03</span><div class="bb-wrap"><div class="bb-fill" style="width:8%"></div></div></div></td><td>0.48</td><td class="sg">.632</td><td>1.68</td></tr>
+            </tbody>
+          </table>
+          <div class="notebox">全変数のVIF &lt; 3.0 ／ 多重共線性の問題なし　·　Durbin–Watson = 1.94（残差の独立性 確認済み）</div>
+        </div>
+
+        <!-- ANOVA + scatter -->
+        <div class="two-col">
+          <div class="card">
+            <div class="card-hd">分散分析表（ANOVA）</div>
+            <table class="at">
+              <thead><tr><th>変動因</th><th>SS</th><th>df</th><th>MS</th><th>F</th><th>p</th></tr></thead>
+              <tbody>
+                <tr><td>回帰</td><td>11,938</td><td>6</td><td>1,990</td><td class="sb">22.54</td><td class="sr">&lt; .001</td></tr>
+                <tr><td>残差</td><td>26,572</td><td>301</td><td>88.28</td><td>—</td><td>—</td></tr>
+                <tr><td><strong>全体</strong></td><td><strong>38,510</strong></td><td><strong>307</strong></td><td>—</td><td>—</td><td>—</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="card">
+            <div class="card-hd">予測値 vs 実測値<span class="sub">r = .56***</span></div>
+            <div class="sc-wrap">
+              <svg viewBox="0 0 280 155" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:140px;">
+                <line x1="32" y1="8" x2="32" y2="130" stroke="#d1d5db" stroke-width="1.1"/>
+                <line x1="32" y1="130" x2="268" y2="130" stroke="#d1d5db" stroke-width="1.1"/>
+                <line x1="32" y1="105" x2="268" y2="105" stroke="#e5e7eb" stroke-width=".7" stroke-dasharray="3,3"/>
+                <line x1="32" y1="80"  x2="268" y2="80"  stroke="#e5e7eb" stroke-width=".7" stroke-dasharray="3,3"/>
+                <line x1="32" y1="55"  x2="268" y2="55"  stroke="#e5e7eb" stroke-width=".7" stroke-dasharray="3,3"/>
+                <line x1="32" y1="30"  x2="268" y2="30"  stroke="#e5e7eb" stroke-width=".7" stroke-dasharray="3,3"/>
+                <line x1="91"  y1="8" x2="91"  y2="130" stroke="#e5e7eb" stroke-width=".7" stroke-dasharray="3,3"/>
+                <line x1="150" y1="8" x2="150" y2="130" stroke="#e5e7eb" stroke-width=".7" stroke-dasharray="3,3"/>
+                <line x1="209" y1="8" x2="209" y2="130" stroke="#e5e7eb" stroke-width=".7" stroke-dasharray="3,3"/>
+                <line x1="40" y1="122" x2="260" y2="16" stroke="#2563c9" stroke-width="1.4" stroke-dasharray="5,3" opacity=".45"/>
+                <!-- dots: r≈.56 realistic scatter -->
+                <circle cx="44"  cy="125" r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="47"  cy="108" r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="51"  cy="120" r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="55"  cy="98"  r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="58"  cy="116" r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="62"  cy="86"  r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="65"  cy="128" r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="68"  cy="104" r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="72"  cy="74"  r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="76"  cy="118" r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="80"  cy="112" r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="84"  cy="90"  r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="87"  cy="126" r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="91"  cy="82"  r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="95"  cy="68"  r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="98"  cy="100" r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="102" cy="118" r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="106" cy="58"  r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="109" cy="88"  r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="113" cy="110" r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="117" cy="72"  r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="120" cy="44"  r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="124" cy="96"  r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="128" cy="115" r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="131" cy="62"  r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="135" cy="84"  r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="139" cy="50"  r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="142" cy="106" r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="146" cy="76"  r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="150" cy="34"  r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="153" cy="90"  r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="157" cy="112" r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="161" cy="54"  r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="164" cy="78"  r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="168" cy="42"  r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="172" cy="100" r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="175" cy="66"  r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="179" cy="28"  r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="183" cy="84"  r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="186" cy="108" r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="190" cy="50"  r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="194" cy="72"  r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="197" cy="36"  r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="201" cy="92"  r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="205" cy="60"  r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="208" cy="20"  r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="212" cy="78"  r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="216" cy="44"  r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="219" cy="96"  r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="223" cy="56"  r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="227" cy="32"  r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="230" cy="68"  r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="234" cy="86"  r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="238" cy="24"  r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="241" cy="52"  r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="245" cy="74"  r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="249" cy="40"  r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="252" cy="16"  r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="256" cy="62"  r="2.5" fill="#2563c9" opacity=".5"/>
+                <circle cx="260" cy="30"  r="2.5" fill="#2563c9" opacity=".5"/>
+                <text x="150" y="146" text-anchor="middle" font-size="8" fill="#6b7280" font-family="Noto Sans JP">予測値（点）</text>
+                <text x="12" y="72" text-anchor="middle" font-size="8" fill="#6b7280" font-family="Noto Sans JP" transform="rotate(-90,12,72)">実測値（点）</text>
+                <text x="32"  y="140" text-anchor="middle" font-size="7.5" fill="#9ca3af" font-family="IBM Plex Mono">40</text>
+                <text x="91"  y="140" text-anchor="middle" font-size="7.5" fill="#9ca3af" font-family="IBM Plex Mono">55</text>
+                <text x="150" y="140" text-anchor="middle" font-size="7.5" fill="#9ca3af" font-family="IBM Plex Mono">70</text>
+                <text x="209" y="140" text-anchor="middle" font-size="7.5" fill="#9ca3af" font-family="IBM Plex Mono">85</text>
+                <text x="262" y="140" text-anchor="middle" font-size="7.5" fill="#9ca3af" font-family="IBM Plex Mono">100</text>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- コマンドログ -->
+        <div class="card">
+          <div class="card-hd">コマンドログ</div>
+          <div class="cmd">
+            <span class="comment"># 重回帰分析の実行</span><br>
+            <span class="prompt">&gt;</span> regression(dep="score_final", preds=c("mot_score","se_score","meta_score","col_score","deep_score","help_score"), std=TRUE, vif=TRUE)<br>
+            <span class="prompt">&gt;</span> plot_fitted(model_1)<br>
+            <span class="prompt">&gt;</span> <span class="cursor">█</span>
+          </div>
+        </div>
+
+      </div><!-- /es-output -->
+
+      <div class="es-status">
+        <span class="ok">● 分析完了</span>
+        <span>処理時間: 0.21s</span>
+        <span>VIF max = 2.11</span>
+        <span>警告: なし</span>
+        <span style="margin-left:auto;">教育データサイエンス · R8後期 · 武庫川女子大学</span>
+      </div>
+    </div><!-- /es-main -->
+  </div><!-- /es-body -->
+</div><!-- /win-edustat -->
+
+<!-- ════ Window 2: スプレッドシート ════ -->
+<div class="window" id="win-sheet">
+  <div class="titlebar titlebar-inactive">
+    <div class="traffic"><div class="dot dim"></div><div class="dot dim"></div><div class="dot dim"></div></div>
+    <div class="win-title">learning_outcomes_R8.csv — Numbers</div>
+  </div>
+  <div class="sh-toolbar">
+    <span>📄</span>
+    <span class="sh-btn">表示</span>
+    <span class="sh-btn">挿入</span>
+    <span class="sh-btn">フォーマット</span>
+    <span style="margin-left:auto; font-size:9px; color:#6b7280;">308行 × 8列</span>
+  </div>
+  <div class="sh-tabs">
+    <div class="sh-tab active">データ</div>
+    <div class="sh-tab">記述統計</div>
+    <div class="sh-tab">グラフ</div>
+  </div>
+  <div class="sh-fbar">
+    <span class="cell-addr">B4</span>
+    <span style="color:#9ca3af; font-size:10px; font-family:var(--mono);">fx</span>
+    <span class="fx-content">4</span>
+  </div>
+  <div class="sh-grid">
+    <table class="grid">
+      <thead>
+        <tr>
+          <th class="rn"></th>
+          <th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>F</th><th>G</th><th>H</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="rn-cell">1</td><td class="lc hd">ID</td><td class="hd">mot_sc</td><td class="hd">se_sc</td><td class="hd">meta_sc</td><td class="hd">col_sc</td><td class="hd">deep_sc</td><td class="hd">help_sc</td><td class="hd">score</td></tr>
+        <tr><td class="rn-cell">2</td><td class="lc">S001</td><td>4</td><td>3</td><td>4</td><td>5</td><td>3</td><td>2</td><td>82</td></tr>
+        <tr><td class="rn-cell">3</td><td class="lc">S002</td><td>3</td><td>4</td><td>3</td><td>3</td><td>4</td><td>4</td><td>71</td></tr>
+        <tr><td class="rn-cell">4</td><td class="lc">S003</td><td class="sel">4</td><td>2</td><td>3</td><td>4</td><td>3</td><td>3</td><td>68</td></tr>
+        <tr><td class="rn-cell">5</td><td class="lc">S004</td><td>5</td><td>5</td><td>4</td><td>4</td><td>5</td><td>3</td><td>91</td></tr>
+        <tr><td class="rn-cell">6</td><td class="lc">S005</td><td>3</td><td>3</td><td>2</td><td>3</td><td>2</td><td>4</td><td>59</td></tr>
+        <tr><td class="rn-cell">7</td><td class="lc">S006</td><td>4</td><td>4</td><td>4</td><td>5</td><td>4</td><td>2</td><td>78</td></tr>
+        <tr><td class="rn-cell">8</td><td class="lc">S007</td><td>2</td><td>3</td><td>3</td><td>2</td><td>3</td><td>3</td><td>61</td></tr>
+        <tr><td class="rn-cell">9</td><td class="lc">S008</td><td>5</td><td>4</td><td>5</td><td>4</td><td>4</td><td>5</td><td>88</td></tr>
+        <tr><td class="rn-cell">10</td><td class="lc">S009</td><td>3</td><td>2</td><td>3</td><td>3</td><td>2</td><td>2</td><td>54</td></tr>
+        <tr><td class="rn-cell">11</td><td class="lc">S010</td><td>4</td><td>5</td><td>4</td><td>4</td><td>5</td><td>4</td><td>85</td></tr>
+        <tr><td class="rn-cell">12</td><td class="lc">S011</td><td>3</td><td>3</td><td>4</td><td>2</td><td>3</td><td>3</td><td>67</td></tr>
+        <tr><td class="rn-cell">13</td><td class="lc">S012</td><td>4</td><td>4</td><td>3</td><td>5</td><td>4</td><td>2</td><td>76</td></tr>
+        <tr><td class="rn-cell">14</td><td class="lc">S013</td><td>2</td><td>2</td><td>2</td><td>3</td><td>2</td><td>4</td><td>48</td></tr>
+        <tr><td class="rn-cell">15</td><td class="lc">S014</td><td>5</td><td>5</td><td>5</td><td>4</td><td>5</td><td>3</td><td>94</td></tr>
+        <tr><td class="rn-cell">16</td><td class="lc">S015</td><td>3</td><td>4</td><td>3</td><td>3</td><td>3</td><td>5</td><td>72</td></tr>
+        <tr><td class="rn-cell">17</td><td class="lc">S016</td><td>4</td><td>3</td><td>4</td><td>4</td><td>4</td><td>3</td><td>79</td></tr>
+        <tr><td class="rn-cell">18</td><td class="lc">S017</td><td>2</td><td>4</td><td>2</td><td>2</td><td>3</td><td>4</td><td>63</td></tr>
+        <tr><td class="rn-cell">19</td><td class="lc">S018</td><td>5</td><td>4</td><td>4</td><td>5</td><td>4</td><td>2</td><td>87</td></tr>
+        <tr><td class="rn-cell">20</td><td class="lc">S019</td><td>3</td><td>3</td><td>3</td><td>3</td><td>3</td><td>3</td><td>70</td></tr>
+        <tr><td class="rn-cell" style="color:#d1d5db;">…</td><td colspan="8" style="color:#9ca3af; font-size:9px; text-align:center; border-color:#e5e7eb; font-family:var(--sans);">— 308行まで続く —</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ════ Window 3: 課題メモ ════ -->
+<div class="window" id="win-note">
+  <div class="titlebar" style="background:#fde68a; border-bottom:1px solid #fcd34d;">
+    <div class="traffic"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+    <div class="win-title" style="color:#78350f; font-size:11px;">📋 課題メモ — 第11回</div>
+  </div>
+  <div class="note-body">
+    <div class="note-h">教育データサイエンス 第11回<br><span style="font-weight:400; font-size:10px;">重回帰分析の実践</span></div>
+    <div class="note-sec">今日のタスク</div>
+    <div class="ni done"><span>データ読み込み（CSV）</span></div>
+    <div class="ni done"><span>記述統計の確認</span></div>
+    <div class="ni">重回帰分析の実行</div>
+    <div class="ni">β係数の解釈・まとめ</div>
+    <div class="ni">レポート提出（Moodle）</div>
+    <div class="note-sec">確認ポイント</div>
+    <div class="ni">R²=.31 → 分散の31%を説明</div>
+    <div class="ni">協働・援助要請尺度は非有意（p &gt; .05）</div>
+    <div class="ni">VIF &lt; 3.0 → 多重共線性OK</div>
+    <div class="note-memo">💡 β最大は自己効力感尺度（.23）→ 学習成果への影響が最も強い？</div>
+  </div>
+</div>
+
+<!-- Dock -->
+<div class="dock" style="display:none;">
+  <div class="dock-icon active">📊</div>
+  <div class="dock-icon">🔢</div>
+  <div class="dock-icon">🌐</div>
+  <div class="dock-icon">📝</div>
+  <div class="dock-icon">📁</div>
+  <div class="dock-sep"></div>
+  <div class="dock-icon">🗑️</div>
+</div>
+
+</body>
+
+<script>
+// ── ウィンドウのフォーカス管理 ──
+const windows = document.querySelectorAll('.window');
+const zBase = { 'win-edustat': 30, 'win-sheet': 20, 'win-note': 25 };
+let zTop = 40;
+
+function focusWindow(win) {
+  // タイトルバーのトラフィックライトを更新
+  windows.forEach(w => {
+    const dots = w.querySelectorAll('.dot');
+    const isActive = w === win;
+    const tb = w.querySelector('.titlebar');
+    if (w.id === 'win-note') return; // メモは常にカラー
+    if (isActive) {
+      dots.forEach(d => { d.classList.remove('dim'); });
+      tb && tb.classList.remove('titlebar-inactive');
+    } else {
+      dots.forEach(d => {
+        if (!d.classList.contains('r') && !d.classList.contains('y') && !d.classList.contains('g')) return;
+        // note以外はdimに
+        if (w.id !== 'win-note') d.classList.add('dim');
+      });
+      tb && tb.classList.add('titlebar-inactive');
+    }
+  });
+  win.style.zIndex = ++zTop;
+  win.style.transition = 'box-shadow 0.2s';
+  win.style.boxShadow = '0 32px 90px rgba(0,0,0,0.6), 0 2px 8px rgba(0,0,0,0.3)';
+  windows.forEach(w => {
+    if (w !== win) w.style.boxShadow = '0 14px 40px rgba(0,0,0,0.32), 0 2px 6px rgba(0,0,0,0.18)';
+  });
+}
+
+windows.forEach(win => {
+  win.addEventListener('mousedown', () => focusWindow(win));
+});
+
+// ── タブ切り替え ──
+const tabContents = {
+  '重回帰分析': document.querySelector('.es-output'),
+};
+
+// 相関行列コンテンツを生成
+const corrContent = document.createElement('div');
+corrContent.className = 'es-output';
+corrContent.innerHTML = `
+  <div class="card">
+    <div class="card-hd">相関行列<span class="sub">Pearson の積率相関係数　*** p &lt; .001　** p &lt; .01</span></div>
+    <table class="rt" style="font-size:10.5px;">
+      <thead>
+        <tr>
+          <th style="text-align:left;">変数</th>
+          <th>動機づけ</th><th>自己効力</th><th>メタ認知</th><th>協働</th><th>深い処理</th><th>援助要請</th><th>score</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>動機づけ尺度（5項目平均）</td><td style="background:#eff6ff;">—</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr><td>自己効力感尺度（4項目平均）</td><td class="sb">.48***</td><td style="background:#eff6ff;">—</td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr><td>メタ認知方略尺度（6項目平均）</td><td class="sb">.41***</td><td class="sb">.52***</td><td style="background:#eff6ff;">—</td><td></td><td></td><td></td><td></td></tr>
+        <tr><td>協働学習志向尺度（4項目平均）</td><td class="so">.31**</td><td class="so">.28**</td><td class="so">.35**</td><td style="background:#eff6ff;">—</td><td></td><td></td><td></td></tr>
+        <tr><td>深い処理方略尺度（5項目平均）</td><td class="sb">.44***</td><td class="sb">.46***</td><td class="sb">.55***</td><td class="so">.38**</td><td style="background:#eff6ff;">—</td><td></td><td></td></tr>
+        <tr><td>援助要請行動尺度（4項目平均）</td><td class="so">.22**</td><td class="so">.19**</td><td class="so">.27**</td><td class="so">.34**</td><td class="so">.24**</td><td style="background:#eff6ff;">—</td><td></td></tr>
+        <tr><td>最終試験得点</td><td class="sb">.41***</td><td class="sb">.44***</td><td class="sb">.38***</td><td style="color:#9ca3af;">.14</td><td class="sb">.37***</td><td style="color:#9ca3af;">.12</td><td style="background:#eff6ff;">—</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="card" style="margin-top:0;">
+    <div class="card-hd">解釈メモ<span class="sub">自動生成</span></div>
+    <div style="padding:10px 14px; font-size:11px; line-height:1.8; color:#374151;">
+      ・自己効力感尺度とQ3メタ認知方略の相関が最も高い（r = .52）<br>
+      ・協働学習志向尺度・援助要請行動尺度は得点との相関が低い（r &lt; .20）<br>
+      ・多重共線性の懸念は低い（最大 r = .55 &lt; .70）
+    </div>
+  </div>
+`;
+corrContent.style.display = 'none';
+
+// 記述統計コンテンツを生成
+const descContent = document.createElement('div');
+descContent.className = 'es-output';
+descContent.innerHTML = `
+  <div class="card">
+    <div class="card-hd">記述統計<span class="sub">n = 308（リストワイズ除去後）</span></div>
+    <table class="rt">
+      <thead>
+        <tr><th>変数</th><th>M</th><th>SD</th><th>Min</th><th>Max</th><th>歪度</th><th>尖度</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>最終試験得点</td><td>74.3</td><td>11.2</td><td>38.0</td><td>100.0</td><td>−0.31</td><td>0.18</td></tr>
+        <tr><td>動機づけ尺度（5項目平均）</td><td>3.82</td><td>0.71</td><td>1.00</td><td>5.00</td><td>−0.44</td><td>0.52</td></tr>
+        <tr><td>自己効力感尺度（4項目平均）</td><td>3.65</td><td>0.84</td><td>1.00</td><td>5.00</td><td>−0.38</td><td>0.09</td></tr>
+        <tr><td>メタ認知方略尺度（6項目平均）</td><td>3.47</td><td>0.79</td><td>1.00</td><td>5.00</td><td>−0.21</td><td>−0.14</td></tr>
+        <tr><td>協働学習志向尺度（4項目平均）</td><td>3.71</td><td>0.88</td><td>1.00</td><td>5.00</td><td>−0.50</td><td>0.31</td></tr>
+        <tr><td>深い処理方略尺度（5項目平均）</td><td>3.54</td><td>0.76</td><td>1.00</td><td>5.00</td><td>−0.27</td><td>0.07</td></tr>
+        <tr><td>援助要請行動尺度（4項目平均）</td><td>3.39</td><td>0.92</td><td>1.00</td><td>5.00</td><td>−0.18</td><td>−0.22</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="card">
+    <div class="card-hd">度数分布（最終試験得点）<span class="sub">score_final</span></div>
+    <div style="padding:12px 16px;">
+      <svg viewBox="0 0 400 120" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:110px;">
+        <line x1="30" y1="100" x2="390" y2="100" stroke="#d1d5db" stroke-width="1"/>
+        <line x1="30" y1="100" x2="30" y2="10" stroke="#d1d5db" stroke-width="1"/>
+        <!-- bars: 正規分布に近い形 -->
+        <rect x="38"  y="94" width="26" height="6"  fill="#bfdbfe" rx="2"/>
+        <rect x="68"  y="82" width="26" height="18" fill="#93c5fd" rx="2"/>
+        <rect x="98"  y="62" width="26" height="38" fill="#60a5fa" rx="2"/>
+        <rect x="128" y="38" width="26" height="62" fill="#3b82f6" rx="2"/>
+        <rect x="158" y="22" width="26" height="78" fill="#2563c9" rx="2"/>
+        <rect x="188" y="30" width="26" height="70" fill="#2563c9" rx="2"/>
+        <rect x="218" y="50" width="26" height="50" fill="#3b82f6" rx="2"/>
+        <rect x="248" y="72" width="26" height="28" fill="#60a5fa" rx="2"/>
+        <rect x="278" y="88" width="26" height="12" fill="#93c5fd" rx="2"/>
+        <rect x="308" y="96" width="26" height="4"  fill="#bfdbfe" rx="2"/>
+        <text x="51"  y="112" text-anchor="middle" font-size="8" fill="#9ca3af" font-family="IBM Plex Mono">40</text>
+        <text x="111" y="112" text-anchor="middle" font-size="8" fill="#9ca3af" font-family="IBM Plex Mono">55</text>
+        <text x="171" y="112" text-anchor="middle" font-size="8" fill="#9ca3af" font-family="IBM Plex Mono">70</text>
+        <text x="231" y="112" text-anchor="middle" font-size="8" fill="#9ca3af" font-family="IBM Plex Mono">85</text>
+        <text x="291" y="112" text-anchor="middle" font-size="8" fill="#9ca3af" font-family="IBM Plex Mono">100</text>
+        <text x="8" y="103" text-anchor="middle" font-size="8" fill="#9ca3af" font-family="IBM Plex Mono">0</text>
+        <text x="8" y="55"  text-anchor="middle" font-size="8" fill="#9ca3af" font-family="IBM Plex Mono">50</text>
+        <text x="8" y="15"  text-anchor="middle" font-size="8" fill="#9ca3af" font-family="IBM Plex Mono">100</text>
+      </svg>
+    </div>
+  </div>
+`;
+descContent.style.display = 'none';
+
+// 残差診断コンテンツ
+const residContent = document.createElement('div');
+residContent.className = 'es-output';
+residContent.innerHTML = `
+  <div class="card">
+    <div class="card-hd">残差診断<span class="sub">OLS回帰モデルの診断プロット</span></div>
+    <div style="padding:10px 14px; display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+      <div>
+        <div style="font-size:9.5px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px;">残差 vs 予測値</div>
+        <svg viewBox="0 0 180 120" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:110px;">
+          <line x1="20" y1="60" x2="170" y2="60" stroke="#e84a3f" stroke-width="1" stroke-dasharray="4,3" opacity=".6"/>
+          <line x1="20" y1="10" x2="20" y2="110" stroke="#d1d5db" stroke-width="1"/>
+          <line x1="20" y1="110" x2="170" y2="110" stroke="#d1d5db" stroke-width="1"/>
+          <circle cx="35"  cy="48"  r="2.2" fill="#2563c9" opacity=".55"/>
+          <circle cx="45"  cy="72"  r="2.2" fill="#2563c9" opacity=".55"/>
+          <circle cx="55"  cy="42"  r="2.2" fill="#2563c9" opacity=".55"/>
+          <circle cx="62"  cy="68"  r="2.2" fill="#2563c9" opacity=".55"/>
+          <circle cx="70"  cy="52"  r="2.2" fill="#2563c9" opacity=".55"/>
+          <circle cx="78"  cy="78"  r="2.2" fill="#2563c9" opacity=".55"/>
+          <circle cx="85"  cy="38"  r="2.2" fill="#2563c9" opacity=".55"/>
+          <circle cx="93"  cy="65"  r="2.2" fill="#2563c9" opacity=".55"/>
+          <circle cx="100" cy="55"  r="2.2" fill="#2563c9" opacity=".55"/>
+          <circle cx="108" cy="74"  r="2.2" fill="#2563c9" opacity=".55"/>
+          <circle cx="115" cy="44"  r="2.2" fill="#2563c9" opacity=".55"/>
+          <circle cx="123" cy="62"  r="2.2" fill="#2563c9" opacity=".55"/>
+          <circle cx="130" cy="50"  r="2.2" fill="#2563c9" opacity=".55"/>
+          <circle cx="138" cy="70"  r="2.2" fill="#2563c9" opacity=".55"/>
+          <circle cx="145" cy="46"  r="2.2" fill="#2563c9" opacity=".55"/>
+          <circle cx="153" cy="66"  r="2.2" fill="#2563c9" opacity=".55"/>
+          <circle cx="160" cy="54"  r="2.2" fill="#2563c9" opacity=".55"/>
+          <text x="95" y="120" text-anchor="middle" font-size="7.5" fill="#9ca3af" font-family="IBM Plex Mono">予測値</text>
+          <text x="10" y="62" text-anchor="middle" font-size="7" fill="#9ca3af" font-family="IBM Plex Mono" transform="rotate(-90,10,62)">残差</text>
+        </svg>
+      </div>
+      <div>
+        <div style="font-size:9.5px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px;">Q-Q プロット（正規性）</div>
+        <svg viewBox="0 0 180 120" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:110px;">
+          <line x1="20" y1="10" x2="20" y2="110" stroke="#d1d5db" stroke-width="1"/>
+          <line x1="20" y1="110" x2="170" y2="110" stroke="#d1d5db" stroke-width="1"/>
+          <line x1="25" y1="105" x2="165" y2="15" stroke="#2563c9" stroke-width="1.2" stroke-dasharray="4,3" opacity=".4"/>
+          <circle cx="30"  cy="102" r="2.2" fill="#16a37f" opacity=".6"/>
+          <circle cx="42"  cy="94"  r="2.2" fill="#16a37f" opacity=".6"/>
+          <circle cx="54"  cy="84"  r="2.2" fill="#16a37f" opacity=".6"/>
+          <circle cx="66"  cy="76"  r="2.2" fill="#16a37f" opacity=".6"/>
+          <circle cx="78"  cy="66"  r="2.2" fill="#16a37f" opacity=".6"/>
+          <circle cx="90"  cy="58"  r="2.2" fill="#16a37f" opacity=".6"/>
+          <circle cx="102" cy="50"  r="2.2" fill="#16a37f" opacity=".6"/>
+          <circle cx="114" cy="42"  r="2.2" fill="#16a37f" opacity=".6"/>
+          <circle cx="126" cy="34"  r="2.2" fill="#16a37f" opacity=".6"/>
+          <circle cx="138" cy="28"  r="2.2" fill="#16a37f" opacity=".6"/>
+          <circle cx="150" cy="22"  r="2.2" fill="#16a37f" opacity=".6"/>
+          <circle cx="160" cy="18"  r="2.2" fill="#16a37f" opacity=".6"/>
+          <text x="95" y="120" text-anchor="middle" font-size="7.5" fill="#9ca3af" font-family="IBM Plex Mono">理論分位点</text>
+          <text x="10" y="62" text-anchor="middle" font-size="7" fill="#9ca3af" font-family="IBM Plex Mono" transform="rotate(-90,10,62)">標本分位点</text>
+        </svg>
+      </div>
+    </div>
+    <div style="padding:0 14px 10px; font-size:10px; color:#374151; line-height:1.7;">
+      ・残差は予測値に対してランダムに分布しており、等分散性の問題は見られない<br>
+      ・Q-Qプロットは対角線に近く、残差の正規性は概ね満たされている<br>
+      ・Durbin–Watson = 1.94（独立性 OK）
+    </div>
+  </div>
+`;
+residContent.style.display = 'none';
+
+// mainエリアにコンテンツを挿入
+const esMain = document.querySelector('.es-main');
+const esStatus = document.querySelector('.es-status');
+esMain.insertBefore(corrContent,  esStatus);
+esMain.insertBefore(descContent,  esStatus);
+esMain.insertBefore(residContent, esStatus);
+
+// タブクリック処理
+const tabs = document.querySelectorAll('.es-tab');
+const contentMap = {
+  '重回帰分析': document.querySelector('.es-output'),
+  '相関行列':   corrContent,
+  '記述統計':   descContent,
+  '残差診断':   residContent,
+};
+
+tabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    tabs.forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    const label = tab.textContent.trim();
+    Object.values(contentMap).forEach(c => c.style.display = 'none');
+    if (contentMap[label]) {
+      contentMap[label].style.display = 'flex';
+      contentMap[label].style.opacity = '0';
+      contentMap[label].style.transition = 'opacity 0.2s';
+      requestAnimationFrame(() => { contentMap[label].style.opacity = '1'; });
+    }
+  });
+});
+
+// ── スプレッドシートのセル選択 ──
+const gridCells = document.querySelectorAll('table.grid td:not(.rn-cell):not(.hd):not(.lc)');
+let lastSelected = null;
+gridCells.forEach(cell => {
+  cell.addEventListener('click', e => {
+    if (lastSelected) lastSelected.classList.remove('sel');
+    cell.classList.add('sel');
+    lastSelected = cell;
+    // formula bar を更新
+    const row = cell.closest('tr');
+    const colIdx = Array.from(cell.parentNode.children).indexOf(cell);
+    const cols = ['A','B','C','D','E','F','G','H'];
+    const rowNum = row.querySelector('.rn-cell')?.textContent.trim() || '';
+    const colLetter = cols[colIdx] || '';
+    const addr = document.querySelector('.cell-addr');
+    const fx = document.querySelector('.fx-content');
+    if (addr && rowNum && colLetter) addr.textContent = colLetter + rowNum;
+    if (fx) fx.textContent = cell.textContent.trim();
+    e.stopPropagation();
+  });
+});
+
+// ── スプレッドシートのシートタブ切り替え ──
+const shTabs = document.querySelectorAll('.sh-tab');
+shTabs.forEach(t => {
+  t.addEventListener('click', () => {
+    shTabs.forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+  });
+});
+
+// ── ドックアイコン バウンス ──
+const dockIcons = document.querySelectorAll('.dock-icon');
+dockIcons.forEach(icon => {
+  icon.addEventListener('click', () => {
+    icon.style.transition = 'transform 0.1s';
+    icon.style.transform = 'translateY(-18px) scale(1.25)';
+    setTimeout(() => { icon.style.transform = 'translateY(0) scale(1)'; }, 180);
+    setTimeout(() => { icon.style.transform = 'translateY(-8px) scale(1.1)'; }, 280);
+    setTimeout(() => { icon.style.transform = 'translateY(0) scale(1)'; }, 400);
+  });
+});
+
+// ── ウィンドウドラッグ（タイトルバー） ──
+windows.forEach(win => {
+  const tb = win.querySelector('.titlebar');
+  if (!tb) return;
+  let dragging = false, ox = 0, oy = 0;
+  tb.addEventListener('mousedown', e => {
+    if (e.target.classList.contains('dot')) return;
+    dragging = true;
+    const rect = win.getBoundingClientRect();
+    ox = e.clientX - rect.left;
+    oy = e.clientY - rect.top;
+    focusWindow(win);
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    win.style.left = (e.clientX - ox) + 'px';
+    win.style.top  = (e.clientY - oy) + 'px';
+    win.style.right = 'auto';
+    win.style.bottom = 'auto';
+  });
+  document.addEventListener('mouseup', () => { dragging = false; });
+});
+</script>
+</body>
+</html>
