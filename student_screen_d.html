@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1920, initial-scale=1">
+<title>Student D – Windows</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --accent:#0078d4; --green:#107c10; --red:#d13438;
+  --mono:'IBM Plex Mono',monospace; --sans:'Noto Sans JP',sans-serif;
+  --ws: 0 8px 32px rgba(0,0,0,.28),0 2px 6px rgba(0,0,0,.18);
+  --wsa:0 18px 52px rgba(0,0,0,.42),0 2px 8px rgba(0,0,0,.24);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--sans);background:linear-gradient(150deg,#fdf6e3 0%,#fdebd0 25%,#fad7a0 55%,#f9c07a 80%,#f5b041 100%);width:100vw;height:100vh;overflow:hidden;position:relative;font-size:12px;}
+
+/* taskbar */
+.taskbar{position:fixed;bottom:0;left:0;right:0;height:44px;background:rgba(60,40,20,.80);backdrop-filter:blur(30px);display:flex;align-items:center;z-index:2000;border-top:1px solid rgba(255,255,255,.07);}
+.taskbar-start{display:flex;align-items:center;justify-content:center;width:44px;height:44px;font-size:20px;cursor:pointer;}
+.taskbar-search{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:4px 12px;font-size:11px;color:rgba(255,255,255,.6);cursor:pointer;margin:0 6px;width:200px;}
+.taskbar-center{display:flex;align-items:center;gap:2px;position:absolute;left:50%;transform:translateX(-50%);}
+.tb-app{display:flex;flex-direction:column;align-items:center;justify-content:center;width:44px;height:44px;font-size:20px;cursor:pointer;border-radius:4px;transition:background .15s;position:relative;}
+.tb-app:hover{background:rgba(255,255,255,.08);}
+.tb-app.active::after{content:'';position:absolute;bottom:3px;left:50%;transform:translateX(-50%);width:14px;height:3px;border-radius:2px;background:var(--accent);}
+.tb-app.open::after{content:'';position:absolute;bottom:3px;left:50%;transform:translateX(-50%);width:6px;height:3px;border-radius:2px;background:rgba(255,255,255,.4);}
+.taskbar-right{margin-left:auto;display:flex;align-items:center;gap:4px;padding:0 12px;font-size:11px;color:rgba(255,255,255,.7);}
+.tray{display:flex;align-items:center;gap:8px;padding:0 8px;}
+.clock{text-align:center;line-height:1.5;font-size:10.5px;padding:0 8px;}
+
+/* window */
+.window{position:absolute;border-radius:8px;box-shadow:var(--ws);overflow:hidden;border:1px solid rgba(255,255,255,.1);font-size:12px;transition:box-shadow .2s;}
+.window.active{box-shadow:var(--wsa);}
+.titlebar{height:32px;display:flex;align-items:center;padding:0 0 0 12px;position:relative;user-select:none;flex-shrink:0;}
+.titlebar.dark{background:#1e2435;color:#fff;}
+.titlebar.light{background:#f3f3f3;color:#1a1a1a;border-bottom:1px solid #e0e0e0;}
+.win-icon{font-size:14px;margin-right:6px;}
+.win-title-text{font-size:11.5px;font-weight:500;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.win-controls{display:flex;align-items:stretch;height:32px;flex-shrink:0;}
+.wc-btn{width:46px;display:flex;align-items:center;justify-content:center;font-size:10px;cursor:pointer;transition:background .12s;}
+.wc-btn:hover{background:rgba(128,128,128,.2);}
+.wc-btn.close:hover{background:#c42b1c;color:#fff;}
+.wc-btn.dk:hover{background:rgba(255,255,255,.1);}
+.wc-btn.close.dk:hover{background:#c42b1c;}
+
+/* EduStat */
+#win-edustat{left:28px;top:26px;width:1040px;height:700px;z-index:30;}
+.es-body{display:flex;height:calc(100% - 32px);}
+.es-sb{width:185px;min-width:185px;background:#1e2435;display:flex;flex-direction:column;border-right:1px solid rgba(255,255,255,.05);}
+.es-logo{padding:14px 16px 10px;border-bottom:1px solid rgba(255,255,255,.08);font-family:var(--mono);font-size:17px;font-weight:600;color:#fff;letter-spacing:.04em;}
+.es-logo-sub{font-size:9px;color:rgba(255,255,255,.32);margin-top:2px;text-transform:uppercase;letter-spacing:.07em;font-family:var(--sans);}
+.es-nav{padding:10px 0;}
+.es-nav-sec{font-size:9px;color:rgba(255,255,255,.2);text-transform:uppercase;letter-spacing:.12em;padding:8px 16px 4px;}
+.es-item{padding:7px 16px;color:rgba(255,255,255,.5);display:flex;align-items:center;gap:9px;cursor:pointer;font-size:12px;}
+.es-item.active{background:rgba(0,120,212,.3);color:#fff;border-left:2.5px solid var(--accent);}
+.es-item .ico{font-size:13px;width:15px;}
+.es-file{margin-top:auto;padding:10px 16px 12px;border-top:1px solid rgba(255,255,255,.06);font-size:9px;color:rgba(255,255,255,.26);line-height:1.7;font-family:var(--mono);}
+.es-file .ok{color:#4ade80;}
+.es-main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:#f5f4f0;}
+.es-topbar{background:#fff;border-bottom:1px solid #e5e7eb;padding:0 16px;height:38px;display:flex;align-items:center;gap:4px;flex-shrink:0;}
+.es-tab{padding:5px 12px;border-radius:4px 4px 0 0;font-size:11.5px;color:#6b7280;border-bottom:2px solid transparent;cursor:pointer;}
+.es-tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600;}
+.es-badge{margin-left:auto;background:var(--accent);color:#fff;padding:2px 8px;border-radius:3px;font-size:9.5px;font-weight:600;}
+.es-badge.g{background:#107c10;}
+.es-out{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:11px;background:#f5f4f0;}
+.card{background:#fff;border:1px solid #d1d5db;border-radius:4px;overflow:hidden;}
+.card-hd{padding:7px 13px;background:#f8f9fb;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;font-size:11.5px;font-weight:600;color:#1a1a2e;}
+.card-hd .sub{margin-left:auto;font-size:9.5px;color:#6b7280;font-weight:400;}
+.rsq-lbl{font-family:var(--mono);font-size:8.5px;color:#6b7280;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;}
+.rsq-val{font-size:21px;font-weight:700;font-family:var(--mono);line-height:1.2;}
+.rsq-val.b{color:var(--accent);} .rsq-val.g{color:#107c10;} .rsq-val.gr{color:#374151;font-size:19px;}
+.rsq-sub{font-size:8.5px;color:#9ca3af;margin-top:4px;}
+.rt{width:100%;border-collapse:collapse;font-size:11px;}
+.rt th{padding:5px 10px;font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#6b7280;border-bottom:2px solid #e5e7eb;background:#fafafa;text-align:right;}
+.rt th:first-child{text-align:left;}
+.rt td{padding:5px 10px;border-bottom:1px solid #f0f0f0;font-family:var(--mono);font-size:10.5px;text-align:right;color:#374151;}
+.rt td:first-child{text-align:left;font-family:var(--sans);color:#1a1a2e;font-size:11px;}
+.rt tr:last-child td{border-bottom:none;}
+.rt tr:hover td{background:#f0f7ff;}
+.sr{color:#d13438;font-weight:600;} .so{color:#ca5010;font-weight:600;} .sb{color:var(--accent);font-weight:600;} .sg{color:#9ca3af;}
+.bb{display:flex;align-items:center;gap:5px;justify-content:flex-end;}
+.bb-wrap{width:50px;height:7px;background:#e5e7eb;border-radius:3px;overflow:hidden;}
+.bb-fill{height:100%;border-radius:3px;background:var(--accent);}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
+.at{width:100%;border-collapse:collapse;font-size:10.5px;}
+.at th{padding:5px 10px;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#6b7280;border-bottom:2px solid #e5e7eb;background:#fafafa;text-align:right;}
+.at th:first-child{text-align:left;}
+.at td{padding:5px 10px;border-bottom:1px solid #f0f0f0;font-family:var(--mono);font-size:10.5px;text-align:right;}
+.at td:first-child{text-align:left;font-family:var(--sans);font-weight:500;}
+.at tr:last-child td{border-bottom:none;}
+.notebox{padding:6px 12px;background:#fff4e5;border-left:3px solid #ca5010;font-size:9.5px;color:#7a3e00;margin:0 13px 10px;}
+.cmd{padding:9px 12px;background:#1e1e1e;font-family:var(--mono);font-size:10px;color:#d4d4d4;line-height:1.8;}
+.cmd .p{color:#4ec9b0;} .cmd .kw{color:#569cd6;} .cmd .s{color:#ce9178;} .cmd .cm{color:#6a9955;}
+.cursor{color:var(--accent);animation:blink 1.1s step-end infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.es-status{height:22px;background:#1e2435;flex-shrink:0;display:flex;align-items:center;padding:0 14px;gap:16px;font-size:9px;color:rgba(255,255,255,.33);font-family:var(--mono);}
+.es-status .ok{color:#4ade80;}
+
+/* ── 動画サイト（VidStream風） ── */
+#win-vid{right:10px;top:24px;width:490px;height:640px;z-index:22;background:#0f0f0f;}
+.vid-header{background:#0f0f0f;border-bottom:1px solid #272727;padding:8px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.vid-logo{font-size:18px;font-weight:800;color:#ff4444;letter-spacing:-.5px;font-family:Georgia,serif;}
+.vid-search{flex:1;height:28px;background:#121212;border:1px solid #393939;border-radius:14px;display:flex;align-items:center;padding:0 12px;gap:6px;font-size:11px;color:#aaa;}
+.vid-icon-row{display:flex;gap:10px;font-size:16px;color:#aaa;}
+
+.vid-body{height:calc(100% - 32px - 46px);overflow-y:auto;}
+.vid-player-area{background:#000;position:relative;}
+.vid-player{width:100%;aspect-ratio:16/9;background:#000;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;}
+.vid-thumbnail{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:56px;background:linear-gradient(135deg,#1a1a2e,#16213e,#0f3460);}
+.vid-play-btn{position:absolute;width:52px;height:52px;background:rgba(255,68,68,.9);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;color:#fff;}
+.vid-progress{height:3px;background:#333;position:relative;cursor:pointer;}
+.vid-progress-fill{height:100%;background:#ff4444;width:34%;}
+.vid-controls{padding:6px 10px;display:flex;align-items:center;gap:10px;font-size:11px;color:#aaa;background:#0f0f0f;}
+.vid-time{font-family:var(--mono);font-size:10px;}
+
+.vid-info{padding:10px 12px;border-bottom:1px solid #272727;}
+.vid-title{font-size:13px;font-weight:600;color:#fff;line-height:1.4;margin-bottom:6px;}
+.vid-meta{font-size:10px;color:#aaa;display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.vid-actions{display:flex;gap:8px;}
+.vid-action-btn{background:#272727;color:#fff;border-radius:16px;padding:5px 12px;font-size:10.5px;cursor:pointer;display:flex;align-items:center;gap:5px;}
+
+.vid-related-title{padding:10px 12px 6px;font-size:11.5px;font-weight:600;color:#fff;}
+.vid-card{display:flex;gap:8px;padding:6px 12px;cursor:pointer;}
+.vid-card:hover{background:#1a1a1a;}
+.vid-card-thumb{width:110px;height:62px;border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:24px;background:linear-gradient(135deg,#1c1c2e,#2d2d44);}
+.vid-card-info{flex:1;}
+.vid-card-title{font-size:11px;color:#fff;line-height:1.4;margin-bottom:3px;font-weight:500;}
+.vid-card-ch{font-size:10px;color:#aaa;}
+.vid-card-views{font-size:10px;color:#aaa;}
+
+.vid-nav{background:#0f0f0f;border-top:1px solid #272727;height:46px;display:flex;align-items:center;justify-content:space-around;flex-shrink:0;}
+.vid-nav-item{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:18px;color:#aaa;cursor:pointer;}
+.vid-nav-item.active{color:#ff4444;}
+.vid-nav-label{font-size:9px;}
+</style>
+</head>
+<body>
+
+<!-- ════ EduStat ════ -->
+<div class="window active" id="win-edustat">
+  <div class="titlebar dark">
+    <span class="win-icon">📊</span>
+    <span class="win-title-text">EduStat — learning_outcomes_R8.csv</span>
+    <div class="win-controls">
+      <div class="wc-btn dk">—</div><div class="wc-btn dk">⬜</div><div class="wc-btn close dk">✕</div>
+    </div>
+  </div>
+  <div class="es-body">
+    <div class="es-sb">
+      <div class="es-logo">EduStat<div class="es-logo-sub">v2.4.1 · analysis</div></div>
+      <div class="es-nav">
+        <div class="es-nav-sec">分析メニュー</div>
+        <div class="es-item"><span class="ico">📊</span>Descriptives</div>
+        <div class="es-item"><span class="ico">🔬</span>Factor Analysis</div>
+        <div class="es-item active"><span class="ico">↔️</span>Regression</div>
+        <div class="es-item"><span class="ico">🔗</span>Correlation</div>
+        <div class="es-item"><span class="ico">📈</span>SEM / Path</div>
+        <div class="es-nav-sec" style="margin-top:6px;">データセット</div>
+        <div class="es-item" style="font-size:10px;flex-direction:column;align-items:flex-start;gap:1px;padding:6px 16px;">
+          <span style="color:rgba(255,255,255,.7);font-family:var(--mono);">learning_outcomes_R8.csv</span>
+          <span style="font-size:9px;color:rgba(255,255,255,.26);">n=312 · 14 vars · 6尺度得点</span>
+        </div>
+      </div>
+      <div class="es-file">推定法：OLS<br>有効 n：308 / 312<br><span class="ok">● 分析完了</span></div>
+    </div>
+    <div class="es-main">
+      <div class="es-topbar">
+        <div class="es-tab active">重回帰分析</div>
+        <div class="es-tab">相関行列</div>
+        <div class="es-tab">記述統計</div>
+        <div class="es-tab">残差診断</div>
+        <span class="es-badge g">● 完了</span>
+        <span class="es-badge" style="margin-left:6px;">n = 308</span>
+      </div>
+      <div class="es-out" id="main-output">
+
+        <!-- モデル要約 -->
+        <div style="background:#fff;border:1px solid #d1d5db;border-radius:4px;">
+          <div class="card-hd" style="border-bottom:1px solid #e5e7eb;">モデル要約<span class="sub">従属変数：最終試験得点（score_final）</span></div>
+          <div style="display:flex;">
+            <div style="flex:1;padding:14px 10px;text-align:center;border-right:1px solid #e5e7eb;"><div class="rsq-lbl">R²</div><div class="rsq-val b">.310</div><div class="rsq-sub">決定係数</div></div>
+            <div style="flex:1;padding:14px 10px;text-align:center;border-right:1px solid #e5e7eb;"><div class="rsq-lbl">調整済み R²</div><div class="rsq-val b">.296</div><div class="rsq-sub">自由度調整済み</div></div>
+            <div style="flex:1;padding:14px 10px;text-align:center;border-right:1px solid #e5e7eb;"><div class="rsq-lbl">F値</div><div class="rsq-val g">22.54</div><div class="rsq-sub">df=6,301　p &lt; .001</div></div>
+            <div style="flex:1;padding:14px 10px;text-align:center;"><div class="rsq-lbl">推定標準誤差</div><div class="rsq-val gr">9.40</div><div class="rsq-sub">SEE（点）</div></div>
+          </div>
+        </div>
+
+        <!-- 回帰係数 -->
+        <div class="card">
+          <div class="card-hd">回帰係数<span class="sub">各独立変数は複数項目の平均値　*** p&lt;.001　** p&lt;.01　* p&lt;.05</span></div>
+          <table class="rt">
+            <thead><tr><th>変数</th><th>B（非標準化）</th><th>SE</th><th>β（標準化）</th><th>t値</th><th>p値</th><th>VIF</th></tr></thead>
+            <tbody>
+              <tr><td>（定数）</td><td>38.47</td><td>5.12</td><td>—</td><td>7.51</td><td class="sr">&lt;.001***</td><td>—</td></tr>
+              <tr><td>動機づけ尺度（5項目平均）</td><td>3.14</td><td>1.08</td><td><div class="bb"><span>.20</span><div class="bb-wrap"><div class="bb-fill" style="width:50%"></div></div></div></td><td>2.91</td><td class="so">.004**</td><td>1.84</td></tr>
+              <tr><td>自己効力感尺度（4項目平均）</td><td>3.76</td><td>1.14</td><td><div class="bb"><span>.23</span><div class="bb-wrap"><div class="bb-fill" style="width:58%"></div></div></div></td><td>3.30</td><td class="so">.001**</td><td>2.11</td></tr>
+              <tr><td>メタ認知方略尺度（6項目平均）</td><td>2.58</td><td>1.02</td><td><div class="bb"><span>.16</span><div class="bb-wrap"><div class="bb-fill" style="width:40%"></div></div></div></td><td>2.53</td><td class="sb">.012*</td><td>1.96</td></tr>
+              <tr><td>協働学習志向尺度（4項目平均）</td><td>0.61</td><td>1.05</td><td><div class="bb"><span>.04</span><div class="bb-wrap"><div class="bb-fill" style="width:10%"></div></div></div></td><td>0.58</td><td class="sg">.562</td><td>1.73</td></tr>
+              <tr><td>深い処理方略尺度（5項目平均）</td><td>2.94</td><td>1.11</td><td><div class="bb"><span>.18</span><div class="bb-wrap"><div class="bb-fill" style="width:45%"></div></div></div></td><td>2.65</td><td class="so">.008**</td><td>2.03</td></tr>
+              <tr><td>援助要請行動尺度（4項目平均）</td><td>0.47</td><td>0.98</td><td><div class="bb"><span>.03</span><div class="bb-wrap"><div class="bb-fill" style="width:8%"></div></div></div></td><td>0.48</td><td class="sg">.632</td><td>1.68</td></tr>
+            </tbody>
+          </table>
+          <div class="notebox">全変数のVIF &lt; 3.0 ／ 多重共線性の問題なし　· Durbin–Watson = 1.94</div>
+        </div>
+
+        <div class="two-col">
+          <div class="card">
+            <div class="card-hd">分散分析表（ANOVA）</div>
+            <table class="at">
+              <thead><tr><th>変動因</th><th>SS</th><th>df</th><th>MS</th><th>F</th><th>p</th></tr></thead>
+              <tbody>
+                <tr><td>回帰</td><td>11,938</td><td>6</td><td>1,990</td><td class="sb">22.54</td><td class="sr">&lt;.001</td></tr>
+                <tr><td>残差</td><td>26,572</td><td>301</td><td>88.28</td><td>—</td><td>—</td></tr>
+                <tr><td><strong>全体</strong></td><td><strong>38,510</strong></td><td><strong>307</strong></td><td>—</td><td>—</td><td>—</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="card">
+            <div class="card-hd">予測値 vs 実測値<span class="sub">r=.56***</span></div>
+            <div style="padding:8px 12px;">
+              <svg viewBox="0 0 240 130" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:115px;">
+                <line x1="26" y1="8" x2="26" y2="112" stroke="#d1d5db" stroke-width="1.1"/>
+                <line x1="26" y1="112" x2="230" y2="112" stroke="#d1d5db" stroke-width="1.1"/>
+                <line x1="26" y1="90" x2="230" y2="90" stroke="#e5e7eb" stroke-width=".7" stroke-dasharray="3,2"/>
+                <line x1="26" y1="68" x2="230" y2="68" stroke="#e5e7eb" stroke-width=".7" stroke-dasharray="3,2"/>
+                <line x1="26" y1="46" x2="230" y2="46" stroke="#e5e7eb" stroke-width=".7" stroke-dasharray="3,2"/>
+                <line x1="34" y1="106" x2="222" y2="16" stroke="#0078d4" stroke-width="1.4" stroke-dasharray="5,3" opacity=".4"/>
+                <circle cx="40" cy="102" r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="48" cy="86" r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="55" cy="98" r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="62" cy="78" r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="70" cy="94" r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="77" cy="70" r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="84" cy="104" r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="91" cy="82" r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="98" cy="60" r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="106" cy="90" r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="113" cy="74" r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="120" cy="46" r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="127" cy="84" r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="135" cy="62" r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="142" cy="36" r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="149" cy="72" r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="156" cy="90" r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="164" cy="48" r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="171" cy="66" r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="178" cy="28" r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="185" cy="76" r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="193" cy="52" r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="200" cy="20" r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="207" cy="56" r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="214" cy="38" r="2.2" fill="#0078d4" opacity=".5"/>
+                <circle cx="221" cy="24" r="2.2" fill="#0078d4" opacity=".5"/>
+                <text x="128" y="124" text-anchor="middle" font-size="7.5" fill="#9ca3af" font-family="IBM Plex Mono">予測値（点）</text>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="overflow:hidden;">
+          <div class="card-hd" style="background:#1e1e1e;color:#d4d4d4;border-bottom:1px solid #333;">コマンドログ</div>
+          <div class="cmd">
+            <span class="cm"># 重回帰分析の実行</span><br>
+            <span class="p">&gt;</span> <span class="kw">regression</span>(dep=<span class="s">"score_final"</span>, preds=c(<span class="s">"mot_score","se_score","meta_score","col_score","deep_score","help_score"</span>), std=<span class="kw">TRUE</span>, vif=<span class="kw">TRUE</span>)<br>
+            <span class="p">&gt;</span> <span class="kw">plot_fitted</span>(model_1)<br>
+            <span class="p">&gt;</span> <span class="cursor">█</span>
+          </div>
+        </div>
+      </div>
+      <div class="es-status"><span class="ok">● 分析完了</span><span>処理時間: 0.19s</span><span>VIF max=2.11</span><span style="margin-left:auto;">教育データサイエンス · R8後期 · 武庫川女子大学</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ 動画サイト (VidStream) ════ -->
+<div class="window" id="win-vid">
+  <div class="titlebar light">
+    <span class="win-icon">▶️</span>
+    <span class="win-title-text">VidStream — Orion Browser</span>
+    <div class="win-controls">
+      <div class="wc-btn">—</div><div class="wc-btn">⬜</div><div class="wc-btn close">✕</div>
+    </div>
+  </div>
+  <div class="vid-header">
+    <div class="vid-logo">▶ VidStream</div>
+    <div class="vid-search">🔍 <span>重回帰分析 わかりやすく</span></div>
+    <div class="vid-icon-row"><span>🔔</span><span>👤</span></div>
+  </div>
+  <div class="vid-body">
+    <div class="vid-player-area">
+      <div class="vid-player">
+        <div class="vid-thumbnail">📉</div>
+        <div class="vid-play-btn">▶</div>
+      </div>
+      <div class="vid-progress"><div class="vid-progress-fill"></div></div>
+      <div class="vid-controls">
+        <span>▶</span>
+        <span>⏭</span>
+        <span class="vid-time">8:14 / 24:02</span>
+        <span style="margin-left:auto;">🔊 ⛶</span>
+      </div>
+    </div>
+    <div class="vid-info">
+      <div class="vid-title">【わかりやすく解説】重回帰分析の読み方・β係数・VIFの見方まで完全解説</div>
+      <div class="vid-meta">
+        <span>👁 128,443 回視聴</span>
+        <span>·</span>
+        <span>3日前</span>
+      </div>
+      <div class="vid-actions">
+        <div class="vid-action-btn">👍 4.2K</div>
+        <div class="vid-action-btn">👎</div>
+        <div class="vid-action-btn">↗ 共有</div>
+        <div class="vid-action-btn">＋ 保存</div>
+      </div>
+    </div>
+    <div class="vid-related-title">関連動画</div>
+    <div class="vid-card">
+      <div class="vid-card-thumb">📊</div>
+      <div class="vid-card-info">
+        <div class="vid-card-title">統計検定2級対策！回帰分析の基礎から応用まで</div>
+        <div class="vid-card-ch">StatChannel</div>
+        <div class="vid-card-views">👁 89,211 回 · 1週間前</div>
+      </div>
+    </div>
+    <div class="vid-card">
+      <div class="vid-card-thumb">🎮</div>
+      <div class="vid-card-info">
+        <div class="vid-card-title">【神回】新作FPS 最強ランク到達ルート完全解説 ガチ勢向け</div>
+        <div class="vid-card-ch">GamerKai_ch</div>
+        <div class="vid-card-views">👁 420,888 回 · 2日前</div>
+      </div>
+    </div>
+    <div class="vid-card">
+      <div class="vid-card-thumb">⚽</div>
+      <div class="vid-card-info">
+        <div class="vid-card-title">Jリーグ ハイライト 今週のベストゴール集</div>
+        <div class="vid-card-ch">J_League_Official</div>
+        <div class="vid-card-views">👁 210,334 回 · 3日前</div>
+      </div>
+    </div>
+    <div class="vid-card">
+      <div class="vid-card-thumb">🍜</div>
+      <div class="vid-card-info">
+        <div class="vid-card-title">大学生の一人暮らしメシ 節約ラーメンアレンジ10選</div>
+        <div class="vid-card-ch">Daikoku_Meshi</div>
+        <div class="vid-card-views">👁 334,120 回 · 5日前</div>
+      </div>
+    </div>
+  </div>
+  <div class="vid-nav">
+    <div class="vid-nav-item active"><span>🏠</span><div class="vid-nav-label">ホーム</div></div>
+    <div class="vid-nav-item"><span>🔥</span><div class="vid-nav-label">急上昇</div></div>
+    <div class="vid-nav-item"><span>📱</span><div class="vid-nav-label">ショート</div></div>
+    <div class="vid-nav-item"><span>📋</span><div class="vid-nav-label">登録済み</div></div>
+  </div>
+</div>
+
+<!-- タスクバー -->
+<div class="taskbar">
+  <div class="taskbar-start">⊞</div>
+  <div class="taskbar-search">🔍 検索</div>
+  <div class="taskbar-center">
+    <div class="tb-app active" data-win="win-edustat">📊</div>
+    <div class="tb-app open" data-win="win-vid">▶️</div>
+    <div class="tb-app">📁</div>
+    <div class="tb-app">⚙️</div>
+  </div>
+  <div class="taskbar-right">
+    <div class="tray">🔊 📶 🔋</div>
+    <div class="clock">13:42<br>2026/05/06</div>
+  </div>
+</div>
+
+<script>
+let dragging=null,ox=0,oy=0,zTop=50;
+function focusWin(win){
+  document.querySelectorAll('.window').forEach(w=>w.classList.remove('active'));
+  win.classList.add('active'); win.style.zIndex=++zTop;
+  document.querySelectorAll('.tb-app').forEach(b=>{b.classList.remove('active');if(b.dataset.win===win.id)b.classList.add('active');});
+}
+document.addEventListener('DOMContentLoaded',()=>{
+  document.querySelectorAll('.window').forEach(win=>{
+    win.addEventListener('mousedown',()=>focusWin(win),true);
+    const tb=win.querySelector('.titlebar'); if(!tb)return;
+    tb.style.cursor='grab';
+    tb.addEventListener('mousedown',e=>{
+      if(e.target.classList.contains('wc-btn'))return;
+      e.preventDefault(); focusWin(win);
+      const r=win.getBoundingClientRect();
+      win.style.left=r.left+'px'; win.style.top=r.top+'px';
+      win.style.right='auto'; win.style.bottom='auto';
+      ox=e.clientX-r.left; oy=e.clientY-r.top;
+      dragging=win; tb.style.cursor='grabbing';
+    });
+  });
+});
+document.addEventListener('mousemove',e=>{if(!dragging)return;dragging.style.left=Math.max(0,e.clientX-ox)+'px';dragging.style.top=Math.max(0,e.clientY-oy)+'px';});
+document.addEventListener('mouseup',()=>{if(dragging){dragging.querySelector('.titlebar').style.cursor='grab';dragging=null;}});
+document.querySelectorAll('.tb-app[data-win]').forEach(b=>b.addEventListener('click',()=>{const w=document.getElementById(b.dataset.win);if(w)focusWin(w);}));
+
+// EduStat タブ
+const mk=html=>{const d=document.createElement('div');d.className='es-out';d.style.display='none';d.innerHTML=html;return d;};
+const corrC=mk(`<div class="card"><div class="card-hd">相関行列<span class="sub">Pearson *** p&lt;.001 ** p&lt;.01</span></div><table class="rt" style="font-size:10.5px;"><thead><tr><th>変数</th><th>動機づけ</th><th>自己効力</th><th>メタ認知</th><th>協働</th><th>深い処理</th><th>援助要請</th><th>score</th></tr></thead><tbody><tr><td>動機づけ尺度</td><td style="background:#eff6ff">—</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>自己効力感尺度</td><td class="sb">.48***</td><td style="background:#eff6ff">—</td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>メタ認知方略尺度</td><td class="sb">.41***</td><td class="sb">.52***</td><td style="background:#eff6ff">—</td><td></td><td></td><td></td><td></td></tr><tr><td>協働学習志向尺度</td><td class="so">.31**</td><td class="so">.28**</td><td class="so">.35**</td><td style="background:#eff6ff">—</td><td></td><td></td><td></td></tr><tr><td>深い処理方略尺度</td><td class="sb">.44***</td><td class="sb">.46***</td><td class="sb">.55***</td><td class="so">.38**</td><td style="background:#eff6ff">—</td><td></td><td></td></tr><tr><td>援助要請行動尺度</td><td class="so">.22**</td><td class="so">.19**</td><td class="so">.27**</td><td class="so">.34**</td><td class="so">.24**</td><td style="background:#eff6ff">—</td><td></td></tr><tr><td>最終試験得点</td><td class="sb">.41***</td><td class="sb">.44***</td><td class="sb">.38***</td><td class="sg">.14</td><td class="sb">.37***</td><td class="sg">.12</td><td style="background:#eff6ff">—</td></tr></tbody></table></div>`);
+const descC=mk(`<div class="card"><div class="card-hd">記述統計<span class="sub">n=308</span></div><table class="rt"><thead><tr><th>変数</th><th>M</th><th>SD</th><th>Min</th><th>Max</th><th>歪度</th><th>尖度</th></tr></thead><tbody><tr><td>最終試験得点</td><td>74.3</td><td>11.2</td><td>38.0</td><td>100.0</td><td>−0.31</td><td>0.18</td></tr><tr><td>動機づけ尺度</td><td>3.82</td><td>0.71</td><td>1.00</td><td>5.00</td><td>−0.44</td><td>0.52</td></tr><tr><td>自己効力感尺度</td><td>3.65</td><td>0.84</td><td>1.00</td><td>5.00</td><td>−0.38</td><td>0.09</td></tr><tr><td>メタ認知方略尺度</td><td>3.47</td><td>0.79</td><td>1.00</td><td>5.00</td><td>−0.21</td><td>−0.14</td></tr><tr><td>協働学習志向尺度</td><td>3.71</td><td>0.88</td><td>1.00</td><td>5.00</td><td>−0.50</td><td>0.31</td></tr><tr><td>深い処理方略尺度</td><td>3.54</td><td>0.76</td><td>1.00</td><td>5.00</td><td>−0.27</td><td>0.07</td></tr><tr><td>援助要請行動尺度</td><td>3.39</td><td>0.92</td><td>1.00</td><td>5.00</td><td>−0.18</td><td>−0.22</td></tr></tbody></table></div>`);
+const residC=mk(`<div class="card"><div class="card-hd">残差診断</div><div style="padding:10px 14px;font-size:11px;color:#374151;line-height:1.9;">・残差は予測値に対してランダムに分布（等分散性 OK）<br>・Q-Qプロット：正規性概ね OK<br>・Durbin–Watson = 1.94（独立性 OK）</div></div>`);
+const esMain=document.querySelector('.es-main');
+const esStatus=document.querySelector('.es-status');
+[corrC,descC,residC].forEach(c=>esMain.insertBefore(c,esStatus));
+const mainOut=document.getElementById('main-output');
+const cmap={'重回帰分析':mainOut,'相関行列':corrC,'記述統計':descC,'残差診断':residC};
+document.querySelectorAll('.es-tab').forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    document.querySelectorAll('.es-tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    Object.values(cmap).forEach(c=>c.style.display='none');
+    const c=cmap[tab.textContent.trim()];
+    if(c){c.style.display='flex';c.style.opacity='0';requestAnimationFrame(()=>{c.style.transition='opacity .2s';c.style.opacity='1';});}
+    focusWin(document.getElementById('win-edustat'));
+  });
+});
+</script>
+</body>
+</html>
